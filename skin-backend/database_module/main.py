@@ -3,6 +3,7 @@ from .modules.user import UserModule
 from .modules.setting import SettingModule
 from .modules.texture import TextureModule
 from .modules.verification import VerificationModule
+from .modules.fallback import FallbackModule
 from config_loader import config
 
 INIT_SQL = """
@@ -119,6 +120,7 @@ class Database(BaseDB):
         self.setting = SettingModule(self)
         self.texture = TextureModule(self)
         self.verification = VerificationModule(self)
+        self.fallback = FallbackModule(self)
 
     async def init(self):
         """初始化表结构及执行迁移"""

@@ -61,6 +61,27 @@ class UserModule:
             )
             await conn.commit()
 
+    async def update_preferred_language(self, user_id: str, preferred_language: str):
+        async with self.db.get_conn() as conn:
+            await conn.execute(
+                "UPDATE users SET preferred_language=? WHERE id=?",
+                (preferred_language, user_id),
+            )
+            await conn.commit()
+
+    async def is_display_name_taken(
+        self, display_name: str, exclude_user_id: str | None = None
+    ) -> bool:
+        async with self.db.get_conn() as conn:
+            if exclude_user_id:
+                query = "SELECT 1 FROM users WHERE display_name = ? AND id != ?"
+                params = (display_name, exclude_user_id)
+            else:
+                query = "SELECT 1 FROM users WHERE display_name = ?"
+                params = (display_name,)
+            async with conn.execute(query, params) as cur:
+                return await cur.fetchone() is not None
+
     async def delete(self, user_id: str):
         async with self.db.get_conn() as conn:
             await conn.execute("DELETE FROM profiles WHERE user_id=?", (user_id,))
@@ -270,6 +291,11 @@ class UserModule:
             await conn.execute(
                 "DELETE FROM tokens WHERE access_token=?", (access_token,)
             )
+            await conn.commit()
+
+    async def delete_tokens_by_user(self, user_id: str):
+        async with self.db.get_conn() as conn:
+            await conn.execute("DELETE FROM tokens WHERE user_id=?", (user_id,))
             await conn.commit()
 
     async def delete_expired_tokens(self, user_id: str, cutoff: int):

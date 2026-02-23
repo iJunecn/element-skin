@@ -32,27 +32,7 @@ router = APIRouter()
 
 
 async def _get_fallback_services(db: Database) -> list[dict]:
-    async with db.get_conn() as conn:
-        async with conn.execute(
-            """
-            SELECT id, priority, session_url, account_url, services_url, cache_ttl, skin_domains
-            FROM fallback_endpoints
-            ORDER BY priority ASC, id ASC
-            """
-        ) as cur:
-            rows = await cur.fetchall()
-            return [
-                {
-                    "id": r[0],
-                    "priority": r[1],
-                    "session_url": r[2],
-                    "account_url": r[3],
-                    "services_url": r[4],
-                    "cache_ttl": r[5],
-                    "skin_domains": r[6],
-                }
-                for r in rows
-            ]
+    return await db.fallback.list_endpoints()
 
 
 async def _collect_skin_domains(db: Database) -> list[str]:

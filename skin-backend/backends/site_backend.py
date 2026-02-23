@@ -107,10 +107,8 @@ class SiteBackend:
         username = username.strip()
 
         # Check if username (display_name) is taken
-        async with self.db.get_conn() as conn:
-            async with conn.execute("SELECT 1 FROM users WHERE display_name = ?", (username,)) as cur:
-                if await cur.fetchone():
-                    raise HTTPException(status_code=400, detail="Username already exists")
+        if await self.db.user.is_display_name_taken(username):
+            raise HTTPException(status_code=400, detail="Username already exists")
 
         enable_strong_password_check = await self.db.setting.get("enable_strong_password_check", "false") == "true"
         if enable_strong_password_check:
@@ -244,20 +242,17 @@ class SiteBackend:
             # Check for uniqueness if changed
             user_row = await self.db.user.get_by_id(user_id)
             if user_row and user_row.display_name != new_name:
-                async with self.db.get_conn() as conn:
-                    async with conn.execute("SELECT 1 FROM users WHERE display_name = ? AND id != ?", (new_name, user_id)) as cur:
-                        if await cur.fetchone():
-                            raise HTTPException(status_code=400, detail="Username already exists")
+                if await self.db.user.is_display_name_taken(
+                    new_name, exclude_user_id=user_id
+                ):
+                    raise HTTPException(status_code=400, detail="Username already exists")
             
             await self.db.user.update_display_name(user_id, new_name)
 
         if "preferred_language" in data and data["preferred_language"]:
-            async with self.db.get_conn() as conn:
-                await conn.execute(
-                    "UPDATE users SET preferred_language=? WHERE id=?",
-                    (data["preferred_language"], user_id),
-                )
-                await conn.commit()
+            await self.db.user.update_preferred_language(
+                user_id, data["preferred_language"]
+            )
 
         return True
 
@@ -496,83 +491,10 @@ class SiteBackend:
         return await self._get_fallback_services()
 
     async def _get_fallback_services(self) -> list[dict]:
-        async with self.db.get_conn() as conn:
-            async with conn.execute(
-                """
-                SELECT id, priority, session_url, account_url, services_url, cache_ttl, skin_domains
-                FROM fallback_endpoints
-                ORDER BY priority ASC, id ASC
-                """
-            ) as cur:
-                rows = await cur.fetchall()
-                return [
-                    {
-                        "id": r[0],
-                        "priority": r[1],
-                        "session_url": r[2],
-                        "account_url": r[3],
-                        "services_url": r[4],
-                        "cache_ttl": r[5],
-                        "skin_domains": r[6],
-                    }
-                    for r in rows
-                ]
+        return await self.db.fallback.list_endpoints()
 
     async def _save_fallback_endpoints(self, fallbacks: list[dict]):
-        async with self.db.get_conn() as conn:
-            async with conn.execute("SELECT id FROM fallback_endpoints") as cur:
-                existing_ids = {row[0] for row in await cur.fetchall()}
-
-            incoming_ids = {
-                entry["id"] for entry in fallbacks if entry.get("id") is not None
-            }
-            for endpoint_id in existing_ids - incoming_ids:
-                await conn.execute(
-                    "DELETE FROM fallback_endpoints WHERE id=?", (endpoint_id,)
-                )
-
-            for idx, entry in enumerate(fallbacks, start=1):
-                priority = idx
-                session_url = entry["session_url"]
-                account_url = entry["account_url"]
-                services_url = entry["services_url"]
-                cache_ttl = entry["cache_ttl"]
-                skin_domains = entry.get("skin_domains", "")
-                if entry.get("id") is not None:
-                    await conn.execute(
-                        """
-                        UPDATE fallback_endpoints
-                        SET priority=?, session_url=?, account_url=?, services_url=?, cache_ttl=?, skin_domains=?
-                        WHERE id=?
-                        """,
-                        (
-                            priority,
-                            session_url,
-                            account_url,
-                            services_url,
-                            cache_ttl,
-                            skin_domains,
-                            entry["id"],
-                        ),
-                    )
-                else:
-                    await conn.execute(
-                        """
-                        INSERT INTO fallback_endpoints (
-                            priority, session_url, account_url, services_url, cache_ttl, skin_domains
-                        )
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            priority,
-                            session_url,
-                            account_url,
-                            services_url,
-                            cache_ttl,
-                            skin_domains,
-                        ),
-                    )
-            await conn.commit()
+        await self.db.fallback.save_endpoints(fallbacks)
 
     def _validate_fallback_services(self, services: Any) -> list[dict]:
         if not isinstance(services, list):
@@ -662,8 +584,7 @@ class SiteBackend:
         return {"ok": True}
 
     async def _get_primary_fallback_endpoint(self) -> dict | None:
-        fallbacks = await self._get_fallback_services()
-        return fallbacks[0] if fallbacks else None
+        return await self.db.fallback.get_primary_endpoint()
 
     # ========== Carousel ==========
 
