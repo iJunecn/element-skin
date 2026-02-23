@@ -169,9 +169,7 @@ class YggdrasilBackend:
             raise ForbiddenOperationException(
                 "Invalid credentials. Invalid username or password."
             )
-        async with self.db.get_conn() as conn:
-            await conn.execute("DELETE FROM tokens WHERE user_id=?", (user.id,))
-            await conn.commit()
+        await self.db.user.delete_tokens_by_user(user.id)
 
     async def join_server(self, access_token, selected_profile_id, server_id, ip: str):
         token_data = await self.db.user.get_token(access_token)
