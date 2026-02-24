@@ -79,11 +79,6 @@ CREATE TABLE IF NOT EXISTS skin_library (
     created_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS official_whitelist (
-    username TEXT PRIMARY KEY,
-    created_at INTEGER NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS fallback_endpoints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     priority INTEGER NOT NULL,
@@ -131,6 +126,18 @@ class Database(BaseDB):
             )
             skin_library_exists = await cursor.fetchone() is not None
 
+            # 检查 fallback_endpoints 是否已存在，用于后续兼容旧库
+            cursor = await conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='fallback_endpoints'"
+            )
+            fallback_endpoints_exists = await cursor.fetchone() is not None
+
+            # 检查 official_whitelist 是否已存在，用于后续兼容旧库
+            cursor = await conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='official_whitelist'"
+            )
+            official_whitelist_exists = await cursor.fetchone() is not None
+
             # 创建基础表结构
             await conn.executescript(INIT_SQL)
             await conn.commit()
@@ -157,10 +164,8 @@ class Database(BaseDB):
                 )
                 await conn.commit()
 
-            # 迁移：从 config.yaml 的 mojang 初始化 fallback_endpoints
-            cursor = await conn.execute("SELECT COUNT(*) FROM fallback_endpoints")
-            row = await cursor.fetchone()
-            if row and row[0] == 0:
+            # 如果是新创建的 fallback_endpoints 表，从 config.yaml 迁移现有数据
+            if not fallback_endpoints_exists:
                 mojang = config.get("mojang", {})
                 skin_domains = mojang.get("skin_domains", []) or []
                 await conn.execute(
@@ -182,24 +187,29 @@ class Database(BaseDB):
                 await conn.commit()
 
             # 迁移：official_whitelist -> whitelisted_users (绑定到优先级最高的 endpoint)
-            cursor = await conn.execute(
-                "SELECT id FROM fallback_endpoints ORDER BY priority ASC, id ASC LIMIT 1"
-            )
-            row = await cursor.fetchone()
-            if row:
-                endpoint_id = row[0]
+            # 如果存在official_whitelist，则将其中的用户迁移到 whitelisted_users，并关联到优先级最高的 fallback_endpoints 记录
+            if official_whitelist_exists:
                 cursor = await conn.execute(
-                    "SELECT username, created_at FROM official_whitelist"
+                    "SELECT id FROM fallback_endpoints ORDER BY priority ASC, id ASC LIMIT 1"
                 )
-                rows = await cursor.fetchall()
-                for username, created_at in rows:
-                    await conn.execute(
-                        """
-                        INSERT OR IGNORE INTO whitelisted_users (username, endpoint_id, created_at)
-                        VALUES (?, ?, ?)
-                        """,
-                        (username, endpoint_id, created_at),
+                row = await cursor.fetchone()
+                if row:
+                    endpoint_id = row[0]
+                    cursor = await conn.execute(
+                        "SELECT username, created_at FROM official_whitelist"
                     )
+                    rows = await cursor.fetchall()
+                    for username, created_at in rows:
+                        await conn.execute(
+                            """
+                            INSERT OR IGNORE INTO whitelisted_users (username, endpoint_id, created_at)
+                            VALUES (?, ?, ?)
+                            """,
+                            (username, endpoint_id, created_at),
+                        )
+                    await conn.commit()
+                # 迁移完成后删除旧表
+                await conn.execute("DROP TABLE IF EXISTS official_whitelist")
                 await conn.commit()
 
             # 如果是新创建的 skin_library 表，从 user_textures 迁移现有数据
