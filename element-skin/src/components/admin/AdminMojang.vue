@@ -23,13 +23,13 @@
       </template>
       <div class="strategy-container">
         <el-radio-group v-model="settings.fallback_strategy" class="modern-radio">
-          <el-radio-button label="serial">
+          <el-radio-button value="serial">
             <div class="radio-content">
               <el-icon><Sort /></el-icon>
               <span>顺序重试</span>
             </div>
           </el-radio-button>
-          <el-radio-button label="parallel">
+          <el-radio-button value="parallel">
             <div class="radio-content">
               <el-icon><Operation /></el-icon>
               <span>并发请求</span>
