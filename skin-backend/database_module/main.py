@@ -86,7 +86,11 @@ CREATE TABLE IF NOT EXISTS fallback_endpoints (
     account_url TEXT NOT NULL,
     services_url TEXT NOT NULL,
     cache_ttl INTEGER NOT NULL,
-    skin_domains TEXT DEFAULT ''
+    skin_domains TEXT DEFAULT '',
+    enable_profile INTEGER DEFAULT 1,
+    enable_hasjoined INTEGER DEFAULT 1,
+    enable_whitelist INTEGER DEFAULT 0,
+    note TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS whitelisted_users (
@@ -164,6 +168,27 @@ class Database(BaseDB):
                 )
                 await conn.commit()
 
+            # 兼容旧库：fallback_endpoints 增加 enable_profile, enable_hasjoined, enable_whitelist 列
+            cursor = await conn.execute("PRAGMA table_info(fallback_endpoints)")
+            columns = [row[1] for row in await cursor.fetchall()]
+            if "enable_profile" not in columns:
+                await conn.execute(
+                    "ALTER TABLE fallback_endpoints ADD COLUMN enable_profile INTEGER DEFAULT 1"
+                )
+            if "enable_hasjoined" not in columns:
+                await conn.execute(
+                    "ALTER TABLE fallback_endpoints ADD COLUMN enable_hasjoined INTEGER DEFAULT 1"
+                )
+            if "enable_whitelist" not in columns:
+                await conn.execute(
+                    "ALTER TABLE fallback_endpoints ADD COLUMN enable_whitelist INTEGER DEFAULT 0"
+                )
+            if "note" not in columns:
+                await conn.execute(
+                    "ALTER TABLE fallback_endpoints ADD COLUMN note TEXT DEFAULT ''"
+                )
+            await conn.commit()
+
             # 如果是新创建的 fallback_endpoints 表，从 config.yaml 迁移现有数据
             if not fallback_endpoints_exists:
                 mojang = config.get("mojang", {})
@@ -171,9 +196,10 @@ class Database(BaseDB):
                 await conn.execute(
                     """
                     INSERT INTO fallback_endpoints (
-                        priority, session_url, account_url, services_url, cache_ttl, skin_domains
+                        priority, session_url, account_url, services_url, cache_ttl, skin_domains,
+                        enable_profile, enable_hasjoined, enable_whitelist, note
                     )
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         1,
@@ -182,6 +208,10 @@ class Database(BaseDB):
                         mojang.get("services_url", ""),
                         int(mojang.get("cache_ttl", 60)),
                         ",".join([str(item).strip() for item in skin_domains if str(item).strip()]),
+                        1,
+                        1,
+                        0,
+                        'Mojang Official'
                     ),
                 )
                 await conn.commit()
@@ -321,22 +351,9 @@ class Database(BaseDB):
                 "INSERT OR IGNORE INTO settings (key, value) VALUES ('microsoft_redirect_uri', 'http://localhost:8000/microsoft/callback')"
             )
             await conn.execute(
-                "INSERT OR IGNORE INTO settings (key, value) VALUES ('fallback_mojang_profile', 'false')"
-            )
-            await conn.execute(
-                "INSERT OR IGNORE INTO settings (key, value) VALUES ('fallback_mojang_hasjoined', 'false')"
-            )
-            await conn.execute(
                 "INSERT OR IGNORE INTO settings (key, value) VALUES ('fallback_strategy', 'serial')"
             )
             # NOTE: fallback_services_json 已弃用，改用 fallback_endpoints 表存储结构化配置。
-            # fallback_services_json 是什么鬼，会不会有点逆天了
-            # await conn.execute(
-            #     "INSERT OR IGNORE INTO settings (key, value) VALUES ('fallback_services_json', '')"
-            # )
-            await conn.execute(
-                "INSERT OR IGNORE INTO settings (key, value) VALUES ('enable_official_whitelist', 'false')"
-            )
             await conn.execute(
                 "INSERT OR IGNORE INTO settings (key, value) VALUES ('enable_skin_library', 'true')"
             )

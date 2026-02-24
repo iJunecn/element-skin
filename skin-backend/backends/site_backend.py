@@ -411,21 +411,6 @@ class SiteBackend:
             ),
             "fallbacks": fallbacks,
             "fallback_strategy": fallback_strategy,
-            "fallback_status_urls": {
-                "session": (primary_fallback or {}).get("session_url"),
-                "account": (primary_fallback or {}).get("account_url"),
-                "services": (primary_fallback or {}).get("services_url"),
-            },
-            "fallback_mojang_profile": settings.get("fallback_mojang_profile", "false")
-            == "true",
-            "fallback_mojang_hasjoined": settings.get(
-                "fallback_mojang_hasjoined", "false"
-            )
-            == "true",
-            "enable_official_whitelist": settings.get(
-                "enable_official_whitelist", "false"
-            )
-            == "true",
             "enable_skin_library": settings.get("enable_skin_library", "true") == "true",
             # SMTP & Email Verification
             "email_verify_enabled": settings.get("email_verify_enabled", "false") == "true",
@@ -460,10 +445,7 @@ class SiteBackend:
             "microsoft_client_id",
             "microsoft_client_secret",
             "microsoft_redirect_uri",
-            "fallback_mojang_profile",
-            "fallback_mojang_hasjoined",
             "fallback_strategy",
-            "enable_official_whitelist",
             "enable_skin_library",
             "email_verify_enabled",
             "email_verify_ttl",
@@ -557,31 +539,14 @@ class SiteBackend:
                     "services_url": services_url,
                     "cache_ttl": cache_ttl,
                     "skin_domains": ",".join(skin_domains),
+                    "enable_profile": bool(entry.get("enable_profile", True)),
+                    "enable_hasjoined": bool(entry.get("enable_hasjoined", True)),
+                    "enable_whitelist": bool(entry.get("enable_whitelist", False)),
+                    "note": str(entry.get("note", "")).strip(),
                 }
             )
 
         return normalized
-
-    async def get_official_whitelist(self):
-        primary = await self._get_primary_fallback_endpoint()
-        if not primary:
-            return []
-        return await self.db.user.list_official_whitelist_users(primary["id"])
-
-    async def add_official_whitelist_user(self, username: str):
-        if not username:
-            raise HTTPException(status_code=400, detail="Username required")
-        primary = await self._get_primary_fallback_endpoint()
-        if not primary:
-            raise HTTPException(status_code=400, detail="No fallback endpoint configured")
-        await self.db.user.add_official_whitelist_user(username, primary["id"])
-        return {"ok": True}
-
-    async def remove_official_whitelist_user(self, username: str):
-        primary = await self._get_primary_fallback_endpoint()
-        endpoint_id = primary["id"] if primary else None
-        await self.db.user.remove_official_whitelist_user(username, endpoint_id)
-        return {"ok": True}
 
     async def _get_primary_fallback_endpoint(self) -> dict | None:
         return await self.db.fallback.get_primary_endpoint()
@@ -705,3 +670,20 @@ class SiteBackend:
             await self.db.user.update_profile_cape(profile_id, texture_hash)
         else:
             raise ValueError("Invalid texture_type")
+
+    # ========== Whitelist ==========
+
+    async def get_official_whitelist(self, endpoint_id: int):
+        return await self.db.fallback.list_whitelist_users(endpoint_id)
+
+    async def add_official_whitelist_user(self, username: str, endpoint_id: int):
+        if not username:
+            raise HTTPException(status_code=400, detail="username required")
+        await self.db.fallback.add_whitelist_user(username, endpoint_id)
+        return {"ok": True}
+
+    async def remove_official_whitelist_user(self, username: str, endpoint_id: int):
+        if not username:
+            raise HTTPException(status_code=400, detail="username required")
+        await self.db.fallback.remove_whitelist_user(username, endpoint_id)
+        return {"ok": True}

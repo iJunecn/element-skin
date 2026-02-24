@@ -407,17 +407,20 @@ def setup_routes(db: Database, backend, rate_limiter, config: Config):
         return {"ok": True}
 
     @router.get("/admin/official-whitelist")
-    async def get_official_whitelist(payload: dict = Depends(admin_required)):
-        return await site_backend.get_official_whitelist()
+    async def get_official_whitelist(endpoint_id: int, payload: dict = Depends(admin_required)):
+        return await site_backend.get_official_whitelist(endpoint_id)
 
     @router.post("/admin/official-whitelist")
     async def add_official_whitelist(payload: dict = Depends(admin_required), body: dict = Body(...)):
         username = body.get("username")
-        return await site_backend.add_official_whitelist_user(username)
+        endpoint_id = body.get("endpoint_id")
+        if endpoint_id is None:
+            raise HTTPException(status_code=400, detail="endpoint_id is required")
+        return await site_backend.add_official_whitelist_user(username, endpoint_id)
 
     @router.delete("/admin/official-whitelist/{username}")
-    async def remove_official_whitelist(username: str, payload: dict = Depends(admin_required)):
-        return await site_backend.remove_official_whitelist_user(username)
+    async def remove_official_whitelist(username: str, endpoint_id: int, payload: dict = Depends(admin_required)):
+        return await site_backend.remove_official_whitelist_user(username, endpoint_id)
 
     @router.get("/public/carousel")
     async def get_carousel():

@@ -241,58 +241,63 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         if profile:
             return await get_profile_json(profile, crypto, sign=True, base_url=site_url)
 
-        # Fallback to configured services
-        if await db.setting.get("fallback_mojang_hasjoined", "false") == "true":
-            services, strategy = await _resolve_fallbacks(db)
+        # Resolve fallbacks
+        services, strategy = await _resolve_fallbacks(db)
+        if not services:
+            return Response(status_code=204)
 
-            # Check Whitelist
-            if await db.setting.get("enable_official_whitelist", "false") == "true":
-                primary_endpoint_id = services[0].get("id") if services else None
-                if primary_endpoint_id is not None and not await db.user.is_user_in_official_whitelist(
-                    username, primary_endpoint_id
-                ):
-                    logger.info(f"[Fallback] Blocked non-whitelisted user: {username}")
-                    return Response(status_code=204)
-
-            async def request_has_joined(service: dict, session: aiohttp.ClientSession):
-                session_url = service.get("session_url")
-                if not session_url:
-                    return None
-                params = {"username": username, "serverId": serverId}
-                if ip:
-                    params["ip"] = ip
-                target_url = f"{session_url}/session/minecraft/hasJoined"
-                service_name = service.get("id", "unknown")
-                logger.info(
-                    f"[Fallback] Checking hasJoined via: {target_url} | Service: {service_name} | User: {username}"
-                )
-                try:
-                    async with session.get(target_url, params=params, timeout=5) as resp:
-                        logger.info(
-                            f"[Fallback] hasJoined response: {resp.status} | Service: {service_name}"
-                        )
-                        if resp.status == 200:
-                            content = await resp.read()
-                            return Response(
-                                content=content,
-                                status_code=200,
-                                media_type="application/json",
-                            )
-                        if resp.status != 204:
-                            logger.warning(
-                                f"[Fallback] hasJoined returned unexpected status: {resp.status} | Service: {service_name}"
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"[Fallback] hasJoined failed: {e} | Service: {service_name}"
-                    )
+        async def request_has_joined(service: dict, session: aiohttp.ClientSession):
+            # Check per-endpoint switch
+            if not service.get("enable_hasjoined", True):
                 return None
 
-            fallback_response = await _run_fallbacks(
-                services, strategy, request_has_joined
+            # Check per-endpoint whitelist
+            if service.get("enable_whitelist", False):
+                endpoint_id = service.get("id")
+                if endpoint_id is not None and not await db.fallback.is_user_in_whitelist(
+                    username, endpoint_id
+                ):
+                    logger.info(f"[Fallback] Blocked non-whitelisted user: {username} for service: {service.get('id')}")
+                    return None
+
+            session_url = service.get("session_url")
+            if not session_url:
+                return None
+            params = {"username": username, "serverId": serverId}
+            if ip:
+                params["ip"] = ip
+            target_url = f"{session_url}/session/minecraft/hasJoined"
+            service_name = service.get("id", "unknown")
+            logger.info(
+                f"[Fallback] Checking hasJoined via: {target_url} | Service: {service_name} | User: {username}"
             )
-            if fallback_response is not None:
-                return fallback_response
+            try:
+                async with session.get(target_url, params=params, timeout=5) as resp:
+                    logger.info(
+                        f"[Fallback] hasJoined response: {resp.status} | Service: {service_name}"
+                    )
+                    if resp.status == 200:
+                        content = await resp.read()
+                        return Response(
+                            content=content,
+                            status_code=200,
+                            media_type="application/json",
+                        )
+                    if resp.status != 204:
+                        logger.warning(
+                            f"[Fallback] hasJoined returned unexpected status: {resp.status} | Service: {service_name}"
+                        )
+            except Exception as e:
+                logger.error(
+                    f"[Fallback] hasJoined failed: {e} | Service: {service_name}"
+                )
+            return None
+
+        fallback_response = await _run_fallbacks(
+            services, strategy, request_has_joined
+        )
+        if fallback_response is not None:
+            return fallback_response
 
         return Response(status_code=204)
 
@@ -306,48 +311,53 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
                 profile, crypto, sign=not unsigned, base_url=site_url
             )
 
-        # Fallback to configured services
-        if await db.setting.get("fallback_mojang_profile", "false") == "true":
-            services, strategy = await _resolve_fallbacks(db)
+        # Resolve fallbacks
+        services, strategy = await _resolve_fallbacks(db)
+        if not services:
+            return Response(status_code=204)
 
-            async def request_profile(service: dict, session: aiohttp.ClientSession):
-                session_url = service.get("session_url")
-                if not session_url:
-                    return None
-                target_url = (
-                    f"{session_url}/session/minecraft/profile/{uuid}?unsigned={str(unsigned).lower()}"
-                )
-                service_name = service.get("id", "unknown")
-                logger.info(
-                    f"[Fallback] Fetching profile via: {target_url} | Service: {service_name}"
-                )
-                try:
-                    async with session.get(target_url, timeout=5) as resp:
-                        logger.info(
-                            f"[Fallback] Profile response: {resp.status} | Service: {service_name}"
-                        )
-                        if resp.status == 200:
-                            content = await resp.read()
-                            return Response(
-                                content=content,
-                                status_code=200,
-                                media_type="application/json",
-                            )
-                        if resp.status != 204:
-                            logger.warning(
-                                f"[Fallback] Profile fetch returned unexpected status: {resp.status} | Service: {service_name}"
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"[Fallback] Profile fetch failed: {e} | Service: {service_name}"
-                    )
+        async def request_profile(service: dict, session: aiohttp.ClientSession):
+            # Check per-endpoint switch
+            if not service.get("enable_profile", True):
                 return None
 
-            fallback_response = await _run_fallbacks(
-                services, strategy, request_profile
+            session_url = service.get("session_url")
+            if not session_url:
+                return None
+            target_url = (
+                f"{session_url}/session/minecraft/profile/{uuid}?unsigned={str(unsigned).lower()}"
             )
-            if fallback_response is not None:
-                return fallback_response
+            service_name = service.get("id", "unknown")
+            logger.info(
+                f"[Fallback] Fetching profile via: {target_url} | Service: {service_name}"
+            )
+            try:
+                async with session.get(target_url, timeout=5) as resp:
+                    logger.info(
+                        f"[Fallback] Profile response: {resp.status} | Service: {service_name}"
+                    )
+                    if resp.status == 200:
+                        content = await resp.read()
+                        return Response(
+                            content=content,
+                            status_code=200,
+                            media_type="application/json",
+                        )
+                    if resp.status != 204:
+                        logger.warning(
+                            f"[Fallback] Profile fetch returned unexpected status: {resp.status} | Service: {service_name}"
+                        )
+            except Exception as e:
+                logger.error(
+                    f"[Fallback] Profile fetch failed: {e} | Service: {service_name}"
+                )
+            return None
+
+        fallback_response = await _run_fallbacks(
+            services, strategy, request_profile
+        )
+        if fallback_response is not None:
+            return fallback_response
 
         return Response(status_code=204)
 
@@ -361,44 +371,49 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         if p:
             return {"id": p.id, "name": p.name}
 
-        # Fallback to configured services
-        if await db.setting.get("fallback_mojang_profile", "false") == "true":
-            services, strategy = await _resolve_fallbacks(db)
+        # Resolve fallbacks
+        services, strategy = await _resolve_fallbacks(db)
+        if not services:
+            return Response(status_code=204)
 
-            async def request_uuid(service: dict, session: aiohttp.ClientSession):
-                account_url = service.get("account_url")
-                if not account_url:
-                    return None
-                target_url = f"{account_url}/users/profiles/minecraft/{playerName}"
-                service_name = service.get("id", "unknown")
-                logger.info(
-                    f"[Fallback] Lookup UUID via: {target_url} | Service: {service_name}"
-                )
-                try:
-                    async with session.get(target_url, timeout=5) as resp:
-                        logger.info(
-                            f"[Fallback] UUID lookup response: {resp.status} | Service: {service_name}"
-                        )
-                        if resp.status == 200:
-                            content = await resp.read()
-                            return Response(
-                                content=content,
-                                status_code=200,
-                                media_type="application/json",
-                            )
-                        if resp.status != 204:
-                            logger.warning(
-                                f"[Fallback] UUID lookup returned unexpected status: {resp.status} | Service: {service_name}"
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"[Fallback] UUID lookup failed: {e} | Service: {service_name}"
-                    )
+        async def request_uuid(service: dict, session: aiohttp.ClientSession):
+            # Check per-endpoint switch
+            if not service.get("enable_profile", True):
                 return None
 
-            fallback_response = await _run_fallbacks(services, strategy, request_uuid)
-            if fallback_response is not None:
-                return fallback_response
+            account_url = service.get("account_url")
+            if not account_url:
+                return None
+            target_url = f"{account_url}/users/profiles/minecraft/{playerName}"
+            service_name = service.get("id", "unknown")
+            logger.info(
+                f"[Fallback] Lookup UUID via: {target_url} | Service: {service_name}"
+            )
+            try:
+                async with session.get(target_url, timeout=5) as resp:
+                    logger.info(
+                        f"[Fallback] UUID lookup response: {resp.status} | Service: {service_name}"
+                    )
+                    if resp.status == 200:
+                        content = await resp.read()
+                        return Response(
+                            content=content,
+                            status_code=200,
+                            media_type="application/json",
+                        )
+                    if resp.status != 204:
+                        logger.warning(
+                            f"[Fallback] UUID lookup returned unexpected status: {resp.status} | Service: {service_name}"
+                        )
+            except Exception as e:
+                logger.error(
+                    f"[Fallback] UUID lookup failed: {e} | Service: {service_name}"
+                )
+            return None
+
+        fallback_response = await _run_fallbacks(services, strategy, request_uuid)
+        if fallback_response is not None:
+            return fallback_response
 
         return Response(status_code=204)
 
@@ -413,13 +428,16 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         local_profiles = await backend.get_profiles_by_names(req, base_url=site_url)
 
         # 2. 如果启用了转发，查询 Fallback 服务补全缺失的
-        if await db.setting.get("fallback_mojang_profile", "false") == "true":
-            found_names = {p["name"].lower() for p in local_profiles}
-            missing_names = [n for n in req if n.lower() not in found_names]
-            if missing_names:
-                services, strategy = await _resolve_fallbacks(db)
-
+        found_names = {p["name"].lower() for p in local_profiles}
+        missing_names = [n for n in req if n.lower() not in found_names]
+        if missing_names:
+            services, strategy = await _resolve_fallbacks(db)
+            if services:
                 async def request_bulk(service: dict, session: aiohttp.ClientSession):
+                    # Check per-endpoint switch
+                    if not service.get("enable_profile", True):
+                        return None
+
                     account_url = service.get("account_url")
                     if not account_url:
                         return None
@@ -508,50 +526,54 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
             return {"id": p.id, "name": p.name}
 
         # 2. Fallback
+        services, strategy = await _resolve_fallbacks(db)
+        if not services:
+            return Response(status_code=204)
 
-        if await db.setting.get("fallback_mojang_profile", "false") == "true":
-            services, strategy = await _resolve_fallbacks(db)
-
-            async def request_services_lookup(
-                service: dict, session: aiohttp.ClientSession
-            ):
-                services_url = service.get("services_url")
-                if not services_url:
-                    return None
-                target_url = (
-                    f"{services_url}/minecraft/profile/lookup/name/{playerName}"
-                )
-                service_name = service.get("id", "unknown")
-                logger.info(
-                    f"[Fallback] Services lookup via: {target_url} | Service: {service_name}"
-                )
-                try:
-                    async with session.get(target_url, timeout=5) as resp:
-                        logger.info(
-                            f"[Fallback] Services lookup response: {resp.status} | Service: {service_name}"
-                        )
-                        if resp.status == 200:
-                            content = await resp.read()
-                            return Response(
-                                content=content,
-                                status_code=200,
-                                media_type="application/json",
-                            )
-                        if resp.status != 204:
-                            logger.warning(
-                                f"[Fallback] Services lookup returned unexpected status: {resp.status} | Service: {service_name}"
-                            )
-                except Exception as e:
-                    logger.error(
-                        f"[Fallback] Services lookup failed: {e} | Service: {service_name}"
-                    )
+        async def request_services_lookup(
+            service: dict, session: aiohttp.ClientSession
+        ):
+            # Check per-endpoint switch
+            if not service.get("enable_profile", True):
                 return None
 
-            fallback_response = await _run_fallbacks(
-                services, strategy, request_services_lookup
+            services_url = service.get("services_url")
+            if not services_url:
+                return None
+            target_url = (
+                f"{services_url}/minecraft/profile/lookup/name/{playerName}"
             )
-            if fallback_response is not None:
-                return fallback_response
+            service_name = service.get("id", "unknown")
+            logger.info(
+                f"[Fallback] Services lookup via: {target_url} | Service: {service_name}"
+            )
+            try:
+                async with session.get(target_url, timeout=5) as resp:
+                    logger.info(
+                        f"[Fallback] Services lookup response: {resp.status} | Service: {service_name}"
+                    )
+                    if resp.status == 200:
+                        content = await resp.read()
+                        return Response(
+                            content=content,
+                            status_code=200,
+                            media_type="application/json",
+                        )
+                    if resp.status != 204:
+                        logger.warning(
+                            f"[Fallback] Services lookup returned unexpected status: {resp.status} | Service: {service_name}"
+                        )
+            except Exception as e:
+                logger.error(
+                    f"[Fallback] Services lookup failed: {e} | Service: {service_name}"
+                )
+            return None
+
+        fallback_response = await _run_fallbacks(
+            services, strategy, request_services_lookup
+        )
+        if fallback_response is not None:
+            return fallback_response
 
         return Response(status_code=204)
 
