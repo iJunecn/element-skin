@@ -69,7 +69,9 @@
           <!-- Login/Register Buttons -->
           <template v-if="!isLogged">
             <el-button type="primary" @click="go('/login')">登录</el-button>
-            <el-button @click="go('/register')" style="margin-left:8px">注册</el-button>
+            <el-button @click="go('/register')" style="margin-left:8px" class="hero-btn secondary">
+              注册
+            </el-button>
           </template>
         </div>
       </div>
