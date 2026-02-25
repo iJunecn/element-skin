@@ -14,57 +14,114 @@ class AdminBackend:
         self.db = db
         self.config = config
 
-    async def get_admin_settings(self):
-        settings = await self.db.setting.get_all()
-        fallbacks = await self.db.fallback.list_endpoints()
-        fallback_strategy = settings.get("fallback_strategy", "serial")
-        primary_fallback = fallbacks[0] if fallbacks else None
-        
+    # ========== Settings Management (Granular) ==========
+
+    async def get_site_settings(self):
+        s = await self.db.setting.get_all()
         return {
-            "site_name": settings.get("site_name", "皮肤站"),
-            "site_url": settings.get("site_url", ""),
-            "require_invite": settings.get("require_invite", "false") == "true",
-            "allow_register": settings.get("allow_register", "true") == "true",
-            "max_texture_size": int(settings.get("max_texture_size", "1024")),
-            "rate_limit_enabled": settings.get("rate_limit_enabled", "true") == "true",
-            "rate_limit_auth_attempts": int(settings.get("rate_limit_auth_attempts", "5")),
-            "rate_limit_auth_window": int(settings.get("rate_limit_auth_window", "15")),
-            "jwt_expire_days": int(settings.get("jwt_expire_days", "7")),
-            "microsoft_client_id": settings.get("microsoft_client_id", ""),
-            "microsoft_client_secret": settings.get("microsoft_client_secret", ""),
-            "microsoft_redirect_uri": settings.get("microsoft_redirect_uri", "http://localhost:8000/microsoft/callback"),
-            "fallbacks": fallbacks,
-            "fallback_strategy": fallback_strategy,
-            "enable_skin_library": settings.get("enable_skin_library", "true") == "true",
-            "email_verify_enabled": settings.get("email_verify_enabled", "false") == "true",
-            "email_verify_ttl": int(settings.get("email_verify_ttl", "300")),
-            "enable_strong_password_check": settings.get("enable_strong_password_check", "false") == "true",
-            "smtp_host": settings.get("smtp_host", ""),
-            "smtp_port": settings.get("smtp_port", "465"),
-            "smtp_user": settings.get("smtp_user", ""),
-            "smtp_ssl": settings.get("smtp_ssl", "true") == "true",
-            "smtp_sender": settings.get("smtp_sender", ""),
+            "site_name": s.get("site_name", "皮肤站"),
+            "site_url": s.get("site_url", ""),
+            "require_invite": s.get("require_invite", "false") == "true",
+            "allow_register": s.get("allow_register", "true") == "true",
+            "enable_skin_library": s.get("enable_skin_library", "true") == "true",
+            "max_texture_size": int(s.get("max_texture_size", "1024")),
         }
 
-    async def save_admin_settings(self, body: dict):
-        if "fallbacks" in body:
+    async def get_security_settings(self):
+        s = await self.db.setting.get_all()
+        return {
+            "rate_limit_enabled": s.get("rate_limit_enabled", "true") == "true",
+            "rate_limit_auth_attempts": int(s.get("rate_limit_auth_attempts", "5")),
+            "rate_limit_auth_window": int(s.get("rate_limit_auth_window", "15")),
+            "enable_strong_password_check": s.get("enable_strong_password_check", "false") == "true",
+        }
+
+    async def get_auth_settings(self):
+        s = await self.db.setting.get_all()
+        return {
+            "jwt_expire_days": int(s.get("jwt_expire_days", "7")),
+        }
+
+    async def get_microsoft_settings(self):
+        s = await self.db.setting.get_all()
+        return {
+            "microsoft_client_id": s.get("microsoft_client_id", ""),
+            "microsoft_client_secret": s.get("microsoft_client_secret", ""),
+            "microsoft_redirect_uri": s.get("microsoft_redirect_uri", ""),
+        }
+
+    async def get_email_settings(self):
+        s = await self.db.setting.get_all()
+        return {
+            "email_verify_enabled": s.get("email_verify_enabled", "false") == "true",
+            "email_verify_ttl": int(s.get("email_verify_ttl", "300")),
+            "smtp_host": s.get("smtp_host", ""),
+            "smtp_port": int(s.get("smtp_port", "465")),
+            "smtp_user": s.get("smtp_user", ""),
+            "smtp_ssl": s.get("smtp_ssl", "true") == "true",
+            "smtp_sender": s.get("smtp_sender", ""),
+        }
+
+    async def get_fallback_settings(self):
+        s = await self.db.setting.get_all()
+        return {
+            "fallback_strategy": s.get("fallback_strategy", "serial"),
+            "fallbacks": await self.db.fallback.list_endpoints(),
+        }
+
+    async def save_settings_group(self, group: str, body: dict):
+        allowed_keys = {
+            "site": ["site_name", "site_url", "require_invite", "allow_register", "enable_skin_library", "max_texture_size"],
+            "security": ["rate_limit_enabled", "rate_limit_auth_attempts", "rate_limit_auth_window", "enable_strong_password_check"],
+            "auth": ["jwt_expire_days"],
+            "microsoft": ["microsoft_client_id", "microsoft_client_secret", "microsoft_redirect_uri"],
+            "email": ["email_verify_enabled", "email_verify_ttl", "smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_ssl", "smtp_sender"],
+            "fallback": ["fallback_strategy"]
+        }
+        
+        if group not in allowed_keys and group != "fallback_endpoints":
+            raise HTTPException(status_code=400, detail="Invalid settings group")
+
+        if group == "fallback_endpoints":
+            if "fallbacks" in body:
+                fallbacks = self._validate_fallback_services(body.get("fallbacks"))
+                await self.db.fallback.save_endpoints(fallbacks)
+            return
+
+        for key in allowed_keys[group]:
+            if key in body:
+                val = body[key]
+                # Special handling for password
+                if key == "smtp_password" and not val:
+                    continue
+                
+                value = "true" if isinstance(val, bool) and val else ("false" if isinstance(val, bool) else str(val))
+                await self.db.setting.set(key, value)
+        
+        # If fallback strategy was saved, update endpoints if they were also passed (though we prefer separate)
+        if group == "fallback" and "fallbacks" in body:
             fallbacks = self._validate_fallback_services(body.get("fallbacks"))
             await self.db.fallback.save_endpoints(fallbacks)
 
-        for key in [
-            "site_name", "site_url", "require_invite", "allow_register", "max_texture_size",
-            "rate_limit_enabled", "rate_limit_auth_attempts", "rate_limit_auth_window",
-            "jwt_expire_days", "microsoft_client_id", "microsoft_client_secret",
-            "microsoft_redirect_uri", "fallback_strategy", "enable_skin_library",
-            "email_verify_enabled", "email_verify_ttl", "enable_strong_password_check",
-            "smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_ssl", "smtp_sender",
-        ]:
-            if key in body:
-                val = body[key]
-                value = "true" if isinstance(val, bool) and val else ("false" if isinstance(val, bool) else str(val))
-                if key == "smtp_password" and not value:
-                    continue
-                await self.db.setting.set(key, value)
+    # ========== Legacy compatibility (can be removed later) ==========
+
+    async def get_admin_settings(self):
+        site = await self.get_site_settings()
+        sec = await self.get_security_settings()
+        auth = await self.get_auth_settings()
+        ms = await self.get_microsoft_settings()
+        fallback = await self.get_fallback_settings()
+        email = await self.get_email_settings()
+        return {**site, **sec, **auth, **ms, **fallback, **email}
+
+    async def save_admin_settings(self, body: dict):
+        # Determine which groups are present and save them
+        for group in ["site", "security", "auth", "microsoft", "email", "fallback"]:
+            await self.save_settings_group(group, body)
+        if "fallbacks" in body:
+            await self.save_settings_group("fallback_endpoints", body)
+
+    # ========== Other Methods ==========
 
     def _validate_fallback_services(self, services: Any) -> list[dict]:
         if not isinstance(services, list):
@@ -133,12 +190,48 @@ class AdminBackend:
             })
         return result
 
+    async def get_user_info(self, user_id: str) -> Dict[str, Any]:
+        user_row = await self.db.user.get_by_id(user_id)
+        if not user_row:
+            raise HTTPException(status_code=404, detail="user not found")
+
+        profiles = await self.db.user.get_profiles_by_user(user_id)
+        profiles_list = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "model": p.texture_model,
+                "skin_hash": p.skin_hash,
+                "cape_hash": p.cape_hash,
+            }
+            for p in profiles
+        ]
+
+        return {
+            "id": user_row.id,
+            "email": user_row.email,
+            "lang": user_row.preferredLanguage,
+            "display_name": user_row.display_name,
+            "is_admin": bool(user_row.is_admin),
+            "banned_until": user_row.banned_until,
+            "profiles": profiles_list,
+        }
+
     async def toggle_user_admin(self, user_id: str, actor_id: str):
         if actor_id == user_id:
             raise HTTPException(status_code=403, detail="cannot change own admin status")
         new_status = await self.db.user.toggle_admin(user_id)
         if new_status == -1:
             raise HTTPException(status_code=404, detail="user not found")
+
+    async def delete_user(self, user_id: str, is_admin_action=False):
+        user_row = await self.db.user.get_by_id(user_id)
+        if not user_row:
+            raise HTTPException(status_code=404, detail="user not found")
+        if user_row.is_admin and is_admin_action:
+            raise HTTPException(status_code=403, detail="cannot delete admin user")
+        await self.db.user.delete(user_id)
+        return True
 
     async def ban_user(self, user_id, banned_until, actor_id):
         user_row = await self.db.user.get_by_id(user_id)
@@ -148,6 +241,16 @@ class AdminBackend:
             raise HTTPException(status_code=403, detail="cannot ban admin user")
         await self.db.user.ban(user_id, banned_until)
         return banned_until
+
+    async def reset_user_password(self, user_id: str, new_password: str):
+        from utils.password_utils import hash_password
+        user_row = await self.db.user.get_by_id(user_id)
+        if not user_row:
+            raise HTTPException(status_code=404, detail="user not found")
+        
+        password_hash = hash_password(new_password)
+        await self.db.user.update_password(user_id, password_hash)
+        return {"ok": True}
 
     async def create_invite(self, code, total_uses, note: str = ""):
         if code:

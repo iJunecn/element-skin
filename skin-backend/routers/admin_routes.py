@@ -35,6 +35,67 @@ def setup_routes(db: Database, admin_backend, rate_limiter, config: Config):
             raise HTTPException(status_code=403, detail="admin required")
         return payload
 
+    # ========== Settings (Granular) ==========
+
+    @router.get("/admin/settings/site")
+    async def get_site_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_site_settings()
+
+    @router.post("/admin/settings/site")
+    async def save_site_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        await admin_backend.save_settings_group("site", body)
+        return {"ok": True}
+
+    @router.get("/admin/settings/security")
+    async def get_security_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_security_settings()
+
+    @router.post("/admin/settings/security")
+    async def save_security_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        await admin_backend.save_settings_group("security", body)
+        return {"ok": True}
+
+    @router.get("/admin/settings/auth")
+    async def get_auth_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_auth_settings()
+
+    @router.post("/admin/settings/auth")
+    async def save_auth_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        await admin_backend.save_settings_group("auth", body)
+        return {"ok": True}
+
+    @router.get("/admin/settings/microsoft")
+    async def get_microsoft_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_microsoft_settings()
+
+    @router.post("/admin/settings/microsoft")
+    async def save_microsoft_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        await admin_backend.save_settings_group("microsoft", body)
+        return {"ok": True}
+
+    @router.get("/admin/settings/email")
+    async def get_email_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_email_settings()
+
+    @router.post("/admin/settings/email")
+    async def save_email_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        await admin_backend.save_settings_group("email", body)
+        return {"ok": True}
+
+    @router.get("/admin/settings/fallback")
+    async def get_fallback_settings(payload: dict = Depends(admin_required)):
+        return await admin_backend.get_fallback_settings()
+
+    @router.post("/admin/settings/fallback")
+    async def save_fallback_settings(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        # This handles both the strategy and the endpoints
+        await admin_backend.save_settings_group("fallback", body)
+        if "fallbacks" in body:
+            await admin_backend.save_settings_group("fallback_endpoints", body)
+        return {"ok": True}
+
+    # ========== Legacy compatibility ==========
+
     @router.get("/admin/settings")
     async def get_admin_settings(payload: dict = Depends(admin_required)):
         return await admin_backend.get_admin_settings()
@@ -45,6 +106,8 @@ def setup_routes(db: Database, admin_backend, rate_limiter, config: Config):
     ):
         await admin_backend.save_admin_settings(body)
         return {"ok": True}
+
+    # ========== Users ==========
 
     @router.get("/admin/users")
     async def get_admin_users(payload: dict = Depends(admin_required)):
@@ -80,6 +143,16 @@ def setup_routes(db: Database, admin_backend, rate_limiter, config: Config):
         await db.user.unban(user_id)
         return {"ok": True}
 
+    @router.post("/admin/users/reset-password")
+    async def reset_user_password(payload: dict = Depends(admin_required), body: dict = Body(...)):
+        user_id = body.get("user_id")
+        new_password = body.get("new_password")
+        if not user_id or not new_password:
+            raise HTTPException(status_code=400, detail="user_id and new_password required")
+        return await admin_backend.reset_user_password(user_id, new_password)
+
+    # ========== Invites ==========
+
     @router.get("/admin/invites")
     async def get_admin_invites(payload: dict = Depends(admin_required)):
         invites = await db.user.list_invites()
@@ -110,6 +183,8 @@ def setup_routes(db: Database, admin_backend, rate_limiter, config: Config):
         await db.user.delete_invite(code)
         return {"ok": True}
 
+    # ========== Fallback Whitelist ==========
+
     @router.get("/admin/official-whitelist")
     async def get_official_whitelist(endpoint_id: int, payload: dict = Depends(admin_required)):
         return await admin_backend.get_official_whitelist(endpoint_id)
@@ -125,6 +200,8 @@ def setup_routes(db: Database, admin_backend, rate_limiter, config: Config):
     @router.delete("/admin/official-whitelist/{username}")
     async def remove_official_whitelist(username: str, endpoint_id: int, payload: dict = Depends(admin_required)):
         return await admin_backend.remove_official_whitelist_user(username, endpoint_id)
+
+    # ========== Carousel ==========
 
     @router.post("/admin/carousel")
     async def upload_carousel(

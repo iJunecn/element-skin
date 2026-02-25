@@ -174,7 +174,7 @@ const adminNavLinks = [
   { path: '/admin/invites', title: '邀请码管理', icon: Tools },
   { path: '/admin/settings', title: '站点设置', icon: Setting },
   { path: '/admin/email', title: '邮件服务', icon: Message },
-  { path: '/admin/mojang', title: 'Mojang API', icon: Link },
+  { path: '/admin/mojang', title: 'Fallback 服务', icon: Link },
   { path: '/admin/carousel', title: '首页图片', icon: Picture },
 ]
 

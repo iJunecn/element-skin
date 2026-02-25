@@ -1,55 +1,51 @@
 <template>
   <div class="admin-carousel">
-    <div class="section-header">
-      <h2>首页轮播图管理</h2>
+    <div class="page-header">
+      <div class="header-content">
+        <el-icon class="header-icon"><PictureFilled /></el-icon>
+        <div class="header-text">
+          <h2>首页图库管理</h2>
+          <p class="subtitle">上传并管理首页展示的轮播图片，建议使用高清横屏大图</p>
+        </div>
+      </div>
       <el-upload
         action="#"
         :http-request="uploadCarousel"
         :show-file-list="false"
         accept=".png,.jpg,.jpeg,.webp"
       >
-        <el-button type="success" size="large">
-          <el-icon><Plus /></el-icon>
-          <span style="margin-left: 8px">上传新图片</span>
-        </el-button>
+        <el-button type="primary" :icon="Upload" size="large">上传图片</el-button>
       </el-upload>
     </div>
 
     <el-alert
-      title="使用建议"
-      type="info"
-      description="建议上传 1920x1080 或更高分辨率的横屏图片，以获得最佳全屏展示效果。图片将自动填充整个首页背景。"
+      title="配置建议"
+      type="success"
+      description="系统会自动循环展示所有上传的图片。为保证视觉效果，请确保图片比例一致（推荐 16:9），且文件大小不超过设置的上限。"
       show-icon
       :closable="false"
-      class="mb-4"
+      class="mb-6"
     />
 
-    <el-card class="list-card" shadow="hover">
-      <el-table :data="carouselImages" style="width: 100%" v-loading="loading">
-        <el-table-column label="预览" width="200">
-          <template #default="{ row }">
-            <el-image 
-              :src="getCarouselUrl(row.filename)" 
-              fit="cover" 
-              style="width: 160px; height: 90px; border-radius: 8px; cursor: pointer"
-              :preview-src-list="[getCarouselUrl(row.filename)]"
-              preview-teleported
-            />
-          </template>
-        </el-table-column>
-        <el-table-column prop="filename" label="文件名" min-width="200" />
-        <el-table-column label="操作" width="120" align="right" fixed="right">
-          <template #default="{ row }">
-            <el-button type="danger" @click="deleteCarousel(row)" link>
-              <el-icon><Delete /></el-icon>
-              <span>删除</span>
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <div class="carousel-grid" v-loading="loading">
+      <div v-for="row in carouselImages" :key="row.filename" class="carousel-item-card">
+        <el-image 
+          :src="getCarouselUrl(row.filename)" 
+          fit="cover" 
+          class="item-preview"
+          :preview-src-list="[getCarouselUrl(row.filename)]"
+          preview-teleported
+        />
+        <div class="item-info">
+          <span class="filename" :title="row.filename">{{ row.filename }}</span>
+          <el-button type="danger" :icon="Delete" size="small" @click="deleteCarousel(row)" plain circle />
+        </div>
+      </div>
       
-      <el-empty v-if="carouselImages.length === 0 && !loading" description="暂无轮播图，首页将显示默认渐变背景" />
-    </el-card>
+      <div v-if="carouselImages.length === 0 && !loading" class="empty-placeholder">
+        <el-empty description="图库暂无内容，首页将显示默认背景" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -57,15 +53,12 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus, Delete, PictureFilled, Upload } from '@element-plus/icons-vue'
 
 const carouselImages = ref([])
 const loading = ref(false)
 
-function authHeaders() {
-  const token = localStorage.getItem('jwt')
-  return token ? { Authorization: 'Bearer ' + token } : {}
-}
+const authHeaders = () => ({ Authorization: 'Bearer ' + localStorage.getItem('jwt') })
 
 function getCarouselUrl(filename) {
   const base = import.meta.env.VITE_API_BASE || ''
@@ -78,8 +71,7 @@ async function fetchCarousel() {
     const res = await axios.get('/public/carousel')
     carouselImages.value = res.data.map(f => ({ filename: f }))
   } catch (e) {
-    console.error('Fetch carousel error:', e)
-    ElMessage.error('获取列表失败')
+    ElMessage.error('获取图片列表失败')
   } finally {
     loading.value = false
   }
@@ -95,67 +87,50 @@ async function uploadCarousel({ file }) {
     ElMessage.success('上传成功')
     fetchCarousel()
   } catch (e) {
-    ElMessage.error('上传失败: ' + (e.response?.data?.detail || e.message))
+    ElMessage.error(e.response?.data?.detail || '上传失败')
   }
 }
 
 async function deleteCarousel(row) {
   try {
-    await ElMessageBox.confirm('确定要删除这张轮播图吗？', '确认删除', {
+    await ElMessageBox.confirm('确定要永久删除这张图片吗？', '确认删除', {
       type: 'warning',
       confirmButtonText: '确定删除',
       cancelButtonText: '取消'
     })
     await axios.delete(`/admin/carousel/${row.filename}`, { headers: authHeaders() })
-    ElMessage.success('已删除')
+    ElMessage.success('图片已删除')
     fetchCarousel()
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
+  } catch (e) {}
 }
 
-onMounted(() => {
-  fetchCarousel()
-})
+onMounted(fetchCarousel)
 </script>
 
 <style scoped>
-.admin-carousel {
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.admin-carousel { max-width: 1000px; margin: 0 auto; padding: 20px 0; animation: fadeIn 0.4s ease-out; }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.header-content { display: flex; align-items: center; gap: 16px; }
+.header-icon { font-size: 28px; color: var(--el-color-primary); background: var(--el-color-primary-light-9); padding: 10px; border-radius: 10px; }
+.header-text h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.header-text .subtitle { margin: 2px 0 0 0; color: var(--color-text-light); font-size: 13px; }
 
-.section-header h2 {
-  font-weight: 600;
-  color: var(--color-heading);
-  margin: 0;
-}
+.carousel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.carousel-item-card { background: var(--color-card-background); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+.carousel-item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
 
-.list-card {
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  background: var(--color-card-background);
-  animation: cardSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.item-preview { width: 100%; height: 160px; cursor: zoom-in; }
+.item-info { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--color-background-soft); }
+.filename { font-size: 12px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-family: monospace; }
 
-.mb-4 {
-  margin-bottom: 16px;
-}
+.empty-placeholder { grid-column: 1 / -1; padding: 40px 0; }
+.mb-6 { margin-bottom: 24px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 768px) {
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .carousel-grid { grid-template-columns: 1fr; }
 }
 </style>

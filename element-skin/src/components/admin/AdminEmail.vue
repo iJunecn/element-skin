@@ -1,68 +1,103 @@
 <template>
   <div class="settings-section">
-    <div class="section-header">
-      <h2>邮件服务设置</h2>
-      <el-button type="primary" @click="loadSettings">
-        <el-icon><Refresh /></el-icon>
-        刷新
+    <div class="page-header">
+      <div class="header-content">
+        <el-icon class="header-icon"><Message /></el-icon>
+        <div class="header-text">
+          <h2>邮件服务设置</h2>
+          <p class="subtitle">配置 SMTP 服务器以启用注册验证、找回密码等通知功能</p>
+        </div>
+      </div>
+      <el-button type="primary" :icon="Refresh" @click="loadSettings" plain>
+        刷新配置
       </el-button>
     </div>
 
-    <el-card class="settings-card">
-      <el-form 
-        :label-width="labelPosition === 'top' ? 'auto' : '140px'" 
-        :model="emailSettings" 
-        :label-position="labelPosition"
-      >
-        <el-divider content-position="left">验证功能开关</el-divider>
-        <el-form-item label="启用邮件验证">
-          <el-switch v-model="emailSettings.email_verify_enabled" />
-          <el-text size="small" type="info" style="margin-left: 12px">开启后，注册和重置密码需要邮件验证码</el-text>
-        </el-form-item>
-        <el-form-item label="验证码有效期" v-if="emailSettings.email_verify_enabled">
-          <el-input v-model="emailSettings.email_verify_ttl" type="number">
-            <template #suffix>秒</template>
-          </el-input>
-        </el-form-item>
+    <el-card class="modern-settings-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div class="title">
+            <el-icon><Postcard /></el-icon>
+            <span>SMTP 与验证配置</span>
+          </div>
+          <el-button type="primary" size="small" @click="saveSettings" :loading="saving">保存配置</el-button>
+        </div>
+      </template>
 
-        <el-divider content-position="left">SMTP 服务器配置</el-divider>
-        <el-form-item label="SMTP 服务器地址">
-          <el-input v-model="emailSettings.smtp_host" placeholder="smtp.example.com" />
-        </el-form-item>
-        <el-form-item label="SMTP 端口">
-          <el-input v-model="emailSettings.smtp_port" placeholder="465" />
-        </el-form-item>
-        <el-form-item label="SMTP 用户名">
-          <el-input v-model="emailSettings.smtp_user" placeholder="user@example.com" />
-        </el-form-item>
-        <el-form-item label="SMTP 密码">
-          <el-input v-model="emailSettings.smtp_password" type="password" show-password placeholder="留空则不修改" />
-        </el-form-item>
-        <el-form-item label="使用 SSL/TLS">
-          <el-switch v-model="emailSettings.smtp_ssl" />
-        </el-form-item>
-        <el-form-item label="发件人信息">
-          <el-input v-model="emailSettings.smtp_sender" placeholder="SkinServer <no-reply@example.com>" />
-        </el-form-item>
+      <el-form label-position="top" :model="emailSettings">
+        <div class="settings-group">
+          <div class="group-title">验证功能</div>
+          <el-row :gutter="40">
+            <el-col :span="12">
+              <el-form-item label="启用邮件验证">
+                <el-switch v-model="emailSettings.email_verify_enabled" />
+                <p class="hint">开启后，用户注册和重置密码时必须通过邮件验证码确认身份。</p>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12" v-if="emailSettings.email_verify_enabled">
+              <el-form-item label="验证码有效期 (秒)">
+                <el-input-number v-model="emailSettings.email_verify_ttl" :min="60" :step="60" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
 
-        <el-form-item>
-          <el-button type="primary" @click="saveSettings" size="large">
-            <el-icon><Check /></el-icon>
-            保存配置
-          </el-button>
-        </el-form-item>
+        <el-divider />
+
+        <div class="settings-group">
+          <div class="group-title">SMTP 服务器</div>
+          <el-row :gutter="20">
+            <el-col :span="18">
+              <el-form-item label="服务器地址">
+                <el-input v-model="emailSettings.smtp_host" placeholder="smtp.example.com" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="端口">
+                <el-input v-model="emailSettings.smtp_port" placeholder="465" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="用户名 (通常为邮箱地址)">
+                <el-input v-model="emailSettings.smtp_user" placeholder="user@example.com" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="密码 / 授权码">
+                <el-input v-model="emailSettings.smtp_password" type="password" show-password placeholder="留空则不修改原有密码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="使用 SSL/TLS 加密">
+                <el-switch v-model="emailSettings.smtp_ssl" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="发件人显示名称">
+                <el-input v-model="emailSettings.smtp_sender" placeholder="SkinServer <no-reply@example.com>" />
+                <p class="hint">发件人在邮件客户端中显示的名称及回复地址。</p>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
       </el-form>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { Refresh, Check } from '@element-plus/icons-vue'
+import { Refresh, Check, Message, Postcard } from '@element-plus/icons-vue'
 
-const emailSettings = ref({
+const emailSettings = reactive({
   email_verify_enabled: false,
   email_verify_ttl: 300,
   smtp_host: '',
@@ -73,94 +108,83 @@ const emailSettings = ref({
   smtp_sender: ''
 })
 
-const windowWidth = ref(window.innerWidth)
-const labelPosition = computed(() => windowWidth.value < 992 ? 'top' : 'right')
-
-function handleResize() {
-  windowWidth.value = window.innerWidth
-}
-
-function authHeaders() {
-  const token = localStorage.getItem('jwt')
-  return token ? { Authorization: 'Bearer ' + token } : {}
-}
+const saving = ref(false)
+const authHeaders = () => ({ Authorization: 'Bearer ' + localStorage.getItem('jwt') })
 
 async function loadSettings() {
   try {
-    const res = await axios.get('/admin/settings', { headers: authHeaders() })
+    const res = await axios.get('/admin/settings/email', { headers: authHeaders() })
     if (res.data) {
-      // Pick only email related settings
-      emailSettings.value.email_verify_enabled = res.data.email_verify_enabled
-      emailSettings.value.email_verify_ttl = res.data.email_verify_ttl
-      emailSettings.value.smtp_host = res.data.smtp_host
-      emailSettings.value.smtp_port = res.data.smtp_port
-      emailSettings.value.smtp_user = res.data.smtp_user
-      emailSettings.value.smtp_ssl = res.data.smtp_ssl
-      emailSettings.value.smtp_sender = res.data.smtp_sender
-      // Password is not returned by API
+      Object.assign(emailSettings, res.data)
+      emailSettings.smtp_password = '' // Don't show password
     }
   } catch (e) {
-    console.error('Load settings error:', e)
-    ElMessage.error('加载设置失败')
+    ElMessage.error('加载邮件设置失败')
   }
 }
 
 async function saveSettings() {
+  saving.value = true
   try {
-    await axios.post('/admin/settings', emailSettings.value, { headers: authHeaders() })
-    ElMessage.success('保存成功')
+    await axios.post('/admin/settings/email', emailSettings, { headers: authHeaders() })
+    ElMessage.success('设置已保存')
+    emailSettings.smtp_password = '' // Clear password field after save
   } catch (e) {
-    ElMessage.error('保存失败: ' + (e.response?.data?.detail || e.message))
+    ElMessage.error('保存失败')
+  } finally {
+    saving.value = false
   }
 }
 
-onMounted(() => {
-  loadSettings()
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
+onMounted(loadSettings)
 </script>
 
 <style scoped>
 .settings-section {
-  width: 100%;
-  max-width: 1200px;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 20px 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.page-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 30px;
 }
+.header-content { display: flex; align-items: center; gap: 16px; }
+.header-icon {
+  font-size: 28px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  padding: 10px;
+  border-radius: 10px;
+}
+.header-text h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.header-text .subtitle { margin: 4px 0 0 0; color: var(--color-text-light); font-size: 13px; }
 
-.settings-card {
-  width: 100%;
-  max-width: 800px;
-  padding: 30px;
-  animation: cardSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
-  background: var(--color-card-background);
+.modern-settings-card {
   border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-header .title { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+.settings-group { padding: 10px 0; }
+.group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+  border-left: 4px solid var(--el-color-primary);
+  padding-left: 12px;
 }
 
-.settings-card :deep(.el-form-item__label) {
-  color: var(--color-text);
-}
+.hint { font-size: 12px; color: var(--color-text-light); line-height: 1.5; margin-top: 4px; }
 
-.settings-card :deep(.el-divider__text) {
-  background-color: var(--color-card-background);
-  color: var(--color-heading);
-}
-
-.settings-card .el-form {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-@media (max-width: 768px) {
-  .settings-card {
-    padding: 15px;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

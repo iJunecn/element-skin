@@ -232,7 +232,7 @@ const headers = { Authorization: 'Bearer ' + jwt }
 
 async function fetchSettings() {
   try {
-    const res = await axios.get('/admin/settings', { headers })
+    const res = await axios.get('/admin/settings/fallback', { headers })
     settings.value.fallback_strategy = res.data.fallback_strategy || 'serial'
     
     const raw = Array.isArray(res.data.fallbacks) ? res.data.fallbacks : []
@@ -282,10 +282,10 @@ async function saveSettings() {
         skin_domains: item.skin_domains_text.split(',').map(s => s.trim()).filter(s => s)
       }))
     }
-    await axios.post('/admin/settings', payload, { headers })
+    await axios.post('/admin/settings/fallback', payload, { headers })
 
     // 2. Refresh to ensure we have IDs for new endpoints
-    const res = await axios.get('/admin/settings', { headers })
+    const res = await axios.get('/admin/settings/fallback', { headers })
     const updatedFallbacksFromDB = res.data.fallbacks || []
     
     // 3. Sync Whitelists for each endpoint
