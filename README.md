@@ -123,7 +123,7 @@ server {
     
     # 处理不带斜杠的请求
     location = /skinapi {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://localhost:8000/skinapi/; # 注意末尾的 /
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -154,6 +154,11 @@ location /skinapi/ {
     proxy_pass http://localhost:8000;  # 末尾无 /，保留完整路径
     proxy_set_header Host $host;
 }
+# 处理不带斜杠的请求
+location /skinapi {
+    proxy_pass http://localhost:8000/skinapi/;  # 末尾有 /
+    proxy_set_header Host $host;
+}
 ```
 
 **Nginx 主机配置 (对应场景 2)**
@@ -163,6 +168,11 @@ location /skin/ {
 }
 location /skin/api/ {
     proxy_pass http://localhost:8000;
+    proxy_set_header Host $host;
+}
+# 处理不带斜杠的请求
+location /skin/api {
+    proxy_pass http://localhost:8000/skin/api/;
     proxy_set_header Host $host;
 }
 ```
@@ -246,13 +256,14 @@ element-skin/
   - [ ] 公共皮肤库按名称搜索
   - [ ] 公共皮肤库按上传时间排序,热度排序
 - [x] 多个fallback服务支持
+- [ ] 导入第三方皮肤站的角色和材质数据
 
 ### 安全与性能
 - [x] sqlite数据库模块
 - [x] JWT认证机制
 - [x] API速率限制
 - [x] 数据库内存缓存与连接池
-- [ ] 管理员设置细粒度API
+- [x] 管理员设置细粒度API
 - [ ] 数据库性能优化
 - [ ] 多数据库支持（PostgreSQL、MySQL等）
 - [ ] Redis缓存支持
