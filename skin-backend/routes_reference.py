@@ -16,6 +16,7 @@ from backends.site_backend import SiteBackend
 from backends.admin_backend import AdminBackend
 from utils.crypto import CryptoUtils
 from utils.rate_limiter import RateLimiter
+from utils.cached_static import CachedStaticFiles
 from routers import yggdrasil_routes, site_routes, microsoft_routes, admin_routes
 
 # ========== 初始化核心组件 ==========
@@ -79,13 +80,15 @@ textures_path = config.get("textures.directory", "textures")
 os.makedirs(textures_path, exist_ok=True)
 app.mount("/static/textures", StaticFiles(directory=textures_path), name="textures")
 
-# 挂载轮播图目录
+# 挂载静态材质目录 (缓存 7 天)
+textures_path = config.get("textures.directory", "textures")
+os.makedirs(textures_path, exist_ok=True)
+app.mount("/static/textures", CachedStaticFiles(directory=textures_path, cache_max_age=604800), name="textures")
+
+# 挂载轮播图目录 (缓存 1 小时)
 carousel_path = config.get("carousel.directory", "carousel")
 os.makedirs(carousel_path, exist_ok=True)
-app.mount("/static/carousel", StaticFiles(directory=carousel_path), name="carousel")
-
-
-# ========== 异常处理器 ==========
+app.mount("/static/carousel", CachedStaticFiles(directory=carousel_path, cache_max_age=3600), name="carousel")
 
 
 @app.exception_handler(YggdrasilError)
