@@ -182,8 +182,11 @@ const navLinks = computed(() => {
   if (route.path.startsWith('/admin')) {
     return adminNavLinks
   }
-  const links = [...publicLinks.value]
+  const links = []
   if (isLogged.value) {
+    if (enableSkinLibrary.value) {
+      links.push({ path: '/skin-library', title: '皮肤库', icon: Picture })
+    }
     links.push(...dashboardLinks)
     if (isAdmin.value) {
       links.push({ path: '/admin', title: '管理面板', icon: Tools })
@@ -193,8 +196,11 @@ const navLinks = computed(() => {
 })
 
 const drawerLinks = computed(() => {
-  const links = [...publicLinks.value]
+  const links = []
   if (isLogged.value) {
+    if (enableSkinLibrary.value) {
+      links.push({ path: '/skin-library', title: '皮肤库', icon: Picture })
+    }
     links.push({ isDivider: true })
     links.push(...dashboardLinks)
     if (isAdmin.value) {
