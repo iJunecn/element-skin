@@ -56,6 +56,8 @@ server:
   root_path: "/skinapi" 
   # ⚠️ 站点的外部访问地址 (用于 OAuth 回调及 Yggdrasil 发现服务)
   site_url: "http://yourdomain.com" 
+  # ⚠️ 后端 API 外部访问地址 (用于 Yggdrasil 材质 URL)
+  api_url: "http://yourdomain.com/skinapi" 
 
 # CORS 跨域配置
 cors:
@@ -184,13 +186,11 @@ location /skin/api {
 容器启动成功后，请按以下步骤完成初始化：
 
 1.  **注册管理员**: 访问你的站点，注册的**第一个账号**将自动获得管理员权限。
-2.  **配置后端 API**:
+2.  **配置站点设置**:
     *   登录后进入 `管理面板` -> `站点设置`。
-    *   修改 **后端 API 地址**。
-    *   ⚠️ **注意**: 此处必须填写浏览器可访问的完整 URL（例如 `https://yourdomain.com/skinapi` 或 `https://yourdomain.com/skin/api`）。如果配置错误，材质预览将无法加载。
+    *   您可以修改站点名称、注册开关等。
+    *   ⚠️ **注意**: **后端 API 地址** (用于材质预览等) 现在已移至 `config.yaml` 中的 `server.api_url` 配置项。如果预览无法加载，请检查该配置是否正确。
     
-    ![](./img/backend_api_setting.png)
-
 3.  **配置邮件服务**:
     *   进入 `管理面板` -> `邮件服务`。
     *   配置 SMTP 信息并开启“邮件验证开关”，即可启用验证码和密码找回功能。

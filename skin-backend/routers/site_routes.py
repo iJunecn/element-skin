@@ -303,7 +303,6 @@ def setup_routes(db: Database, site_backend, rate_limiter, config: Config):
 
         return {
             "site_name": settings.get("site_name", "皮肤站"),
-            "site_url": settings.get("site_url", ""),
             "allow_register": settings.get("allow_register", "true") == "true",
             "enable_skin_library": settings.get("enable_skin_library", "true") == "true",
             "email_verify_enabled": settings.get("email_verify_enabled", "false") == "true",

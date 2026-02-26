@@ -21,7 +21,8 @@ server:
   host: "0.0.0.0"
   port: 8000
   root_path: ""  # 子目录部署时配置，如 "/skin/api"
-  site_url: "http://yourdomain.com" # 站点外部访问地址 (用于 OAuth 回调等)
+  site_url: "http://yourdomain.com" # 前端站点外部访问地址
+  api_url: "http://yourdomain.com/skinapi" # 后端 API 外部访问地址 (用于 Yggdrasil 材质 URL)
 
 # CORS 跨域配置
 cors:

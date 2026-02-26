@@ -26,14 +26,9 @@
       </template>
       <el-form label-position="top" :model="settings.site">
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="站点名称">
               <el-input v-model="settings.site.site_name" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="后端 API 地址">
-              <el-input v-model="settings.site.site_url" placeholder="https://api.example.com" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -152,7 +147,6 @@ import {
 const settings = reactive({
   site: {
     site_name: '',
-    site_url: '',
     require_invite: false,
     allow_register: true,
     enable_skin_library: true,

@@ -26,6 +26,16 @@ RUN echo 'server { \
     listen 80; \
     root /usr/share/nginx/html; \
     location / { try_files $uri $uri/ /index.html; } \
+    location /static/textures/ { \
+        alias /usr/share/nginx/html/static/textures/; \
+        expires 7d; \
+        add_header Cache-Control "public"; \
+    } \
+    location /static/carousel/ { \
+        alias /usr/share/nginx/html/static/carousel/; \
+        expires 1h; \
+        add_header Cache-Control "public"; \
+    } \
 }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

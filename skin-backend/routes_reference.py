@@ -75,20 +75,14 @@ app.add_middleware(
 #     response = await call_next(request)
 #     return response
 
-# 挂载静态材质目录
+# ========== 静态资源目录准备 ==========
+# 静态文件现在由前端 Nginx 容器处理，后端仅负责文件的写入和管理
+
 textures_path = config.get("textures.directory", "textures")
 os.makedirs(textures_path, exist_ok=True)
-app.mount("/static/textures", StaticFiles(directory=textures_path), name="textures")
 
-# 挂载静态材质目录 (缓存 7 天)
-textures_path = config.get("textures.directory", "textures")
-os.makedirs(textures_path, exist_ok=True)
-app.mount("/static/textures", CachedStaticFiles(directory=textures_path, cache_max_age=604800), name="textures")
-
-# 挂载轮播图目录 (缓存 1 小时)
 carousel_path = config.get("carousel.directory", "carousel")
 os.makedirs(carousel_path, exist_ok=True)
-app.mount("/static/carousel", CachedStaticFiles(directory=carousel_path, cache_max_age=3600), name="carousel")
 
 
 @app.exception_handler(YggdrasilError)

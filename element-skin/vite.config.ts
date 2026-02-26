@@ -1,4 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
+import path from 'node:path'
+import fs from 'node:fs'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -12,6 +14,27 @@ export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
+    {
+      name: 'serve-static-assets',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          // 处理静态材质和轮播图
+          const staticMatch = req.url?.match(/^\/static\/(textures|carousel)\/(.+)$/)
+          if (staticMatch) {
+            const [, type, filename] = staticMatch
+            // 映射到后端目录（假设开发环境下后端在同级目录）
+            const filePath = path.resolve(__dirname, `../skin-backend/${type}/${filename.split('?')[0]}`)
+            
+            if (fs.existsSync(filePath)) {
+              res.setHeader('Content-Type', type === 'textures' ? 'image/png' : 'image/jpeg')
+              res.end(fs.readFileSync(filePath))
+              return
+            }
+          }
+          next()
+        })
+      }
+    }
   ],
   resolve: {
     alias: {
@@ -35,7 +58,7 @@ export default defineConfig({
       },
       // API routes that might conflict with frontend routes
       // When a browser refreshes on these paths, it should serve index.html instead of proxying to the backend
-      '^/(admin|register|reset-password|site-login|me|public|microsoft|textures|send-verification-code)': {
+      '^/(admin|register|reset-password|site-login|me|public|microsoft|send-verification-code)': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         bypass: (req) => {
@@ -43,14 +66,6 @@ export default defineConfig({
             return '/index.html';
           }
         }
-      },
-      '^/static/textures': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '^/static/carousel': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
       },
     }
   },

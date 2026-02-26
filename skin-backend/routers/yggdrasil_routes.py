@@ -54,9 +54,9 @@ async def get_profile_json(
     }
 
     # 材质基础 URL
-    base_texture_url = "/static/textures/"
-    if base_url:
-        base_texture_url = base_url.rstrip("/") + "/static/textures/"
+    # 静态文件现在挂载在前端 Nginx 下，使用 site_url (前端地址)
+    site_url = config.get("server.site_url", "").rstrip("/")
+    base_texture_url = f"{site_url}/static/textures/"
 
     if skin_hash:
         textures_payload["textures"]["SKIN"] = {
@@ -198,10 +198,9 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         request: Request, username: str, serverId: str, ip: str = None
     ):
         """检查是否已加入服务器"""
-        site_url = await db.setting.get("site_url", str(request.base_url))
         profile = await backend.has_joined(username, serverId)
         if profile:
-            return await get_profile_json(profile, crypto, sign=True, base_url=site_url)
+            return await get_profile_json(profile, crypto, sign=True)
 
         # Fallback to configured services
         fallback_resp = await fallback_backend.has_joined(username, serverId, ip)
@@ -213,11 +212,10 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
     @router.get("/sessionserver/session/minecraft/profile/{uuid}")
     async def get_profile(request: Request, uuid: str, unsigned: bool = True):
         """获取角色信息"""
-        site_url = await db.setting.get("site_url", str(request.base_url))
         profile = await backend.get_profile(uuid)
         if profile:
             return await get_profile_json(
-                profile, crypto, sign=not unsigned, base_url=site_url
+                profile, crypto, sign=not unsigned
             )
 
         # Fallback to configured services
@@ -250,8 +248,9 @@ def setup_routes(backend: YggdrasilBackend, db: Database, crypto, rate_limiter):
         if not isinstance(req, list):
             raise HTTPException(status_code=400, detail="Request body must be an array")
 
-        site_url = await db.setting.get("site_url", str(request.base_url))
         # 1. 查询本地
+        # 这里需要注意，backend.get_profiles_by_names 内部可能也需要 site_url
+        site_url = config.get("server.site_url", "").rstrip("/")
         local_profiles = await backend.get_profiles_by_names(req, base_url=site_url)
 
         # 2. 如果启用了转发，查询 Fallback 服务补全缺失的

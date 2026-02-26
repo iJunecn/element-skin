@@ -36,5 +36,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:80"
+    volumes:
+      - ./data/textures:/usr/share/nginx/html/static/textures:ro
+      - ./data/carousel:/usr/share/nginx/html/static/carousel:ro
     networks:
       - element-skin
