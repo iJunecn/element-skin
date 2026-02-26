@@ -239,7 +239,8 @@ function authHeaders() {
 
 function texturesUrl(hash) {
   if (!hash) return ''
-  return '/static/textures/' + hash + '.png'
+  const base = import.meta.env.BASE_URL
+  return `${base}static/textures/${hash}.png`.replace(/\/+/g, '/')
 }
 
 async function openDetailDialog(tex) {

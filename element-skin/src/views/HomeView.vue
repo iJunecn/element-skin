@@ -54,7 +54,8 @@ function goRegister() {
 }
 
 function getCarouselUrl(filename) {
-  return `/static/carousel/${filename}`
+  const base = import.meta.env.BASE_URL
+  return `${base}static/carousel/${filename}`.replace(/\/+/g, '/')
 }
 </script>
 
