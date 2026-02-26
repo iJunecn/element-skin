@@ -119,7 +119,7 @@ const textureResolutions = ref(new Map())
 
 function texturesUrl(hash) {
   if (!hash) return ''
-  return (import.meta.env.VITE_API_BASE || '') + '/static/textures/' + hash + '.png'
+  return '/static/textures/' + hash + '.png'
 }
 
 function formatDate(ts) {

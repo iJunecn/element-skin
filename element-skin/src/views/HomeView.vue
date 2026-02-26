@@ -54,8 +54,7 @@ function goRegister() {
 }
 
 function getCarouselUrl(filename) {
-  const base = import.meta.env.VITE_API_BASE || ''
-  return `${base}/static/carousel/${filename}`
+  return `/static/carousel/${filename}`
 }
 </script>
 

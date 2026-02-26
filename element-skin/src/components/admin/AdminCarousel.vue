@@ -61,8 +61,7 @@ const loading = ref(false)
 const authHeaders = () => ({ Authorization: 'Bearer ' + localStorage.getItem('jwt') })
 
 function getCarouselUrl(filename) {
-  const base = import.meta.env.VITE_API_BASE || ''
-  return `${base}/static/carousel/${filename}`
+  return `/static/carousel/${filename}`
 }
 
 async function fetchCarousel() {
