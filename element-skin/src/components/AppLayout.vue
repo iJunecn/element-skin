@@ -468,7 +468,7 @@ onUnmounted(() => {
   font-size: 15px;
   line-height: 1.5;
   font-weight: 500;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 :deep(.footer-link),
@@ -501,7 +501,7 @@ onUnmounted(() => {
   gap: 16px;
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .is-home-layout .app-main {
