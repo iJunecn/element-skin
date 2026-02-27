@@ -31,13 +31,16 @@ const props = defineProps({
   }
 })
 
+// Parse text into segments with links and optional replacement.
+// Available options: {site}, {year}
 const parsedSegments = computed(() => parseFooterText(props.text, props.siteName))
 
 function parseFooterText(rawText, currentSiteName) {
   if (!rawText) return []
   const siteLabel = (currentSiteName || '').trim()
+  const normalizedText = rawText.replace(/\{year\}/g, __BUILD_YEAR__)
   const segments = []
-  const parts = rawText.split('{site}')
+  const parts = normalizedText.split('{site}')
 
   for (let index = 0; index < parts.length; index += 1) {
     appendMarkdownSegments(parts[index], segments)
