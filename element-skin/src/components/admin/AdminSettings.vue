@@ -56,7 +56,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="页脚附加信息">
-              <el-input v-model="settings.site.footer_text" placeholder="Copyright © 2026 Element Skin" />
+              <el-input v-model="settings.site.footer_text" placeholder="Copyright © 2026 Element Skin, 支持 Markdown 链接和占位符 {site}" />
             </el-form-item>
           </el-col>
         </el-row>

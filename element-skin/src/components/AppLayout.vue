@@ -97,7 +97,9 @@
     <footer v-if="showFooter && isHome" class="layout-footer-wrap">
       <div class="layout-footer">
         <div class="footer-inner">
-          <p v-if="footerText" class="footer-text">{{ footerText }}</p>
+          <p v-if="footerText" class="footer-text">
+            <TextSegments :text="footerText" :site-name="siteName" link-class="footer-link" />
+          </p>
           <p class="footer-powered">
             Powered by
             <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
@@ -108,7 +110,9 @@
 
     <footer v-if="showFooter && !isHome" class="app-footer">
       <div class="footer-inner footer-inner-standard">
-        <p v-if="footerText" class="footer-text">{{ footerText }}</p>
+        <p v-if="footerText" class="footer-text">
+          <TextSegments :text="footerText" :site-name="siteName" link-class="footer-link" />
+        </p>
         <p class="footer-powered">
           Powered by
           <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
@@ -125,6 +129,8 @@ import axios from 'axios'
 import {
   Menu as MenuIcon, Box, User, Setting, Tools, Back, Odometer, Link, Picture, Message, Moon, Sunny
 } from '@element-plus/icons-vue'
+
+import TextSegments from './TextSegments.vue'
 
 const route = useRoute()
 const { push } = useRouter()
@@ -239,7 +245,6 @@ const showFooter = computed(() => !isAuthPage.value)
 
 const repoUrl = 'https://github.com/water2004/element-skin'
 const repoLabel = `Element Skin ${__APP_VERSION__ || 'v0.0.0'}`
-
 
 // --- Authentication and User State ---
 function parseJwt(token) {
@@ -457,14 +462,7 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.footer-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
+.footer-text,
 .footer-powered {
   margin: 0;
   font-size: 15px;
@@ -473,12 +471,18 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+:deep(.footer-link),
 .footer-powered a {
-  color: #409eff;
-  text-decoration: none;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
   padding: 0;
-  /* background-color: transparent; */
+}
+
+:deep(.footer-link:hover),
+.footer-powered a:hover {
+  color: #409eff;
 }
 
 .app-footer {
