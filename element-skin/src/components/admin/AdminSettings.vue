@@ -52,6 +52,14 @@
         <el-form-item label="最大纹理大小 (KB)">
           <el-input-number v-model="settings.site.max_texture_size" :min="64" :step="128" />
         </el-form-item>
+        <el-divider />
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="页脚版权信息">
+              <el-input v-model="settings.site.footer_text" placeholder="如：© 2026 站点名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
     </el-card>
 
@@ -150,7 +158,8 @@ const settings = reactive({
     require_invite: false,
     allow_register: true,
     enable_skin_library: true,
-    max_texture_size: 1024
+    max_texture_size: 1024,
+    footer_text: ''
   },
   security: {
     rate_limit_enabled: true,

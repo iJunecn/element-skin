@@ -24,6 +24,7 @@ class AdminBackend:
             "allow_register": s.get("allow_register", "true") == "true",
             "enable_skin_library": s.get("enable_skin_library", "true") == "true",
             "max_texture_size": int(s.get("max_texture_size", "1024")),
+            "footer_text": s.get("footer_text", ""),
         }
 
     async def get_security_settings(self):
@@ -70,7 +71,14 @@ class AdminBackend:
 
     async def save_settings_group(self, group: str, body: dict):
         allowed_keys = {
-            "site": ["site_name", "require_invite", "allow_register", "enable_skin_library", "max_texture_size"],
+            "site": [
+                "site_name",
+                "require_invite",
+                "allow_register",
+                "enable_skin_library",
+                "max_texture_size",
+                "footer_text",
+            ],
             "security": ["rate_limit_enabled", "rate_limit_auth_attempts", "rate_limit_auth_window", "enable_strong_password_check"],
             "auth": ["jwt_expire_days"],
             "microsoft": ["microsoft_client_id", "microsoft_client_secret", "microsoft_redirect_uri"],

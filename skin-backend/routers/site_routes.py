@@ -306,6 +306,7 @@ def setup_routes(db: Database, site_backend, rate_limiter, config: Config):
             "allow_register": settings.get("allow_register", "true") == "true",
             "enable_skin_library": settings.get("enable_skin_library", "true") == "true",
             "email_verify_enabled": settings.get("email_verify_enabled", "false") == "true",
+            "footer_text": settings.get("footer_text", ""),
             "mojang_status_urls": {
                 "session": (primary or {}).get(
                     "session_url", "https://sessionserver.mojang.com"

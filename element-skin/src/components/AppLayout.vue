@@ -93,6 +93,20 @@
     <main class="app-main">
       <slot />
     </main>
+
+    <footer v-if="showFooter && isHome" class="layout-footer-wrap">
+      <div class="layout-footer">
+        <div class="footer-inner">
+          <p v-if="footerText" class="footer-text">{{ footerText }}</p>
+        </div>
+      </div>
+    </footer>
+
+    <footer v-if="showFooter && !isHome" class="app-footer">
+      <div class="footer-inner footer-inner-standard">
+        <p v-if="footerText" class="footer-text">{{ footerText }}</p>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -113,6 +127,7 @@ const enableSkinLibrary = ref(localStorage.getItem('enable_skin_library_cache') 
 const jwtToken = ref(localStorage.getItem('jwt') || '')
 const user = ref(null)
 const drawer = ref(false)
+const footerText = ref('')
 
 // --- Theme Management ---
 const isDark = ref(false)
@@ -212,6 +227,7 @@ const drawerLinks = computed(() => {
 })
 
 const activeRoute = computed(() => route.path)
+const showFooter = computed(() => !isAuthPage.value && footerText.value)
 
 
 // --- Authentication and User State ---
@@ -287,6 +303,9 @@ onMounted(async () => {
       enableSkinLibrary.value = res.data.enable_skin_library
       localStorage.setItem('enable_skin_library_cache', res.data.enable_skin_library.toString())
     }
+    if (res.data.footer_text !== undefined) {
+      footerText.value = res.data.footer_text
+    }
   } catch (e) {
     console.warn('Failed to load site settings:', e)
   }
@@ -306,6 +325,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout-header-wrap {
   padding: 0 20px;
   background: var(--color-header-background);
@@ -394,8 +419,82 @@ onUnmounted(() => {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.layout-footer-wrap {
+  display: none;
+}
+
+.is-home-layout .layout-footer-wrap {
+  display: block;
+  position: relative;
+  margin-top: 0px;
+  padding: 24px 20px 32px;
+  z-index: 20;
+}
+
+.layout-footer {
+  color: #fff;
+}
+
+.layout-footer .footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.footer-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-light);
+  padding: 16px 20px;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.footer-inner-standard {
+  margin: 0 auto;
+  max-width: 1200px;
+  text-align: center;
+  justify-content: center;
+  gap: 16px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .is-home-layout .app-main {
   padding: 0;
+  overflow: auto;
+}
+
+.is-home-layout :deep(.home-container) {
+  min-height: 100vh;
+}
+
+.is-home-layout :deep(.hero-wrapper) {
+  min-height: 100vh;
+}
+
+.is-home-layout :deep(.hero-carousel-bg),
+.is-home-layout :deep(.hero-gradient-bg),
+.is-home-layout :deep(.el-carousel) {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  z-index: 1;
 }
 
 .is-auth-layout .app-main {
