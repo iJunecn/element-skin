@@ -118,7 +118,7 @@
               <span>{{ filingMps }}</span>
             </a>
           </p>
-          <p class="footer-powered footer-powered-main">
+            <p class="footer-powered" :class="{ 'footer-powered-main': hasFooterLeadingItems }">
             Powered by
             <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
           </p>
@@ -148,7 +148,7 @@
             <span>{{ filingMps }}</span>
           </a>
         </p>
-        <p class="footer-powered footer-powered-main">
+          <p class="footer-powered" :class="{ 'footer-powered-main': hasFooterLeadingItems }">
           Powered by
           <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
         </p>
@@ -281,6 +281,7 @@ const activeRoute = computed(() => route.path)
 const showFooter = computed(() => !isAuthPage.value)
 const showIcp = computed(() => Boolean(filingIcp.value && filingIcpLink.value))
 const showMps = computed(() => Boolean(showIcp.value && filingMps.value && filingMpsLink.value))
+const hasFooterLeadingItems = computed(() => Boolean(footerText.value || showIcp.value || showMps.value))
 
 // Who said to apply hard-coded repo link/label for footer display?
 const repoUrl = 'https://github.com/water2004/element-skin'
