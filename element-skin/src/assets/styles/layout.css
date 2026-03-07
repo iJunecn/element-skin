@@ -37,37 +37,46 @@
   gap: 24px;
 }
 
-/* Radio Group (Filters) - Restoring original joined style with dark mode fix */
+/* 1. Standard Joined Radio Group (Filters) */
 .capsule-radio :deep(.el-radio-button__inner) {
   background: var(--color-card-background);
   color: var(--color-text);
   border: 1px solid var(--color-border) !important;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: var(--transition-base);
 }
 
-.capsule-radio :deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
-  background: var(--el-color-primary) !important;
-  border-color: var(--el-color-primary) !important;
-  color: #fff !important;
-  box-shadow: -1px 0 0 0 var(--el-color-primary) !important;
+/* 2. Modern Segmented Radio (Action selection) */
+.modern-radio :deep(.el-radio-button__inner) {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+  border-radius: 8px !important;
+  margin-right: 12px;
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-card-background);
+  color: var(--color-text);
+  box-shadow: none !important;
+  transition: var(--transition-base);
 }
 
-/* Fix for dark mode yellowing/mismatch */
-html.dark .capsule-radio :deep(.el-radio-button__inner) {
-  background: #1d1d1d; /* Deep dark grey/black */
+/* Specific fix for the orange/yellow tint in dark mode */
+.modern-radio :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background-color: rgba(64, 158, 255, 0.15) !important;
+  color: #409eff !important;
+  border-color: #409eff !important;
+}
+
+/* Dark Mode Fixes for Radio Buttons */
+html.dark .capsule-radio :deep(.el-radio-button__inner),
+html.dark .modern-radio :deep(.el-radio-button__inner) {
+  background: #1d1d1d;
   border-color: var(--color-border) !important;
 }
 
-html.dark .capsule-radio :deep(.el-radio-button__orig-radio:checked + .el-radio-button__inner) {
-  background: var(--el-color-primary) !important;
-  color: #fff !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 600px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+html.dark .modern-radio :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background-color: rgba(64, 158, 255, 0.25) !important;
+  color: #409eff !important;
+  border-color: #409eff !important;
 }
