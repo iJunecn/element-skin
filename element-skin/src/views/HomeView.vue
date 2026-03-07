@@ -201,7 +201,40 @@ function getCarouselUrl(filename) {
   font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 首页蓝色半透明按钮 */
+.hero-btn:not(.secondary) {
+  background: rgba(64, 158, 255, 0.25) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-btn:not(.secondary):hover {
+  background: rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 首页白色半透明按钮 */
+.hero-btn.secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px);
 }
 
 .features-section {

@@ -457,6 +457,55 @@ onUnmounted(() => {
   backdrop-filter: none;
 }
 
+/* 首页顶部标题栏按钮统一 */
+.is-home-layout .header-actions :deep(.el-button--primary) {
+  background: rgba(64, 158, 255, 0.3) !important;
+  border: 1px solid rgba(64, 158, 255, 0.4) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.is-home-layout .header-actions :deep(.hero-btn.secondary) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 全局实心按钮深色模式自适应 - 使用精准变量覆盖 */
+:deep(.el-button) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+}
+
+/* 深色模式下降低实心按钮明度 */
+:global(html.dark) :deep(.el-button--primary:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #2a5d91 !important;
+  --el-button-border-color: #2a5d91 !important;
+  --el-button-hover-bg-color: #337ecc !important;
+  --el-button-active-bg-color: #24507a !important;
+}
+
+:global(html.dark) :deep(.el-button--danger:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #8e3535 !important;
+  --el-button-border-color: #8e3535 !important;
+  --el-button-hover-bg-color: #a34242 !important;
+  --el-button-active-bg-color: #7a2d2d !important;
+}
+
+:global(html.dark) :deep(.el-button--success:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #417228 !important;
+  --el-button-border-color: #417228 !important;
+  --el-button-hover-bg-color: #529b2e !important;
+}
+
+:global(html.dark) :deep(.el-button--warning:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #91612a !important;
+  --el-button-border-color: #91612a !important;
+}
+
 .is-home-layout .layout-header .logo, 
 .is-home-layout .layout-header :deep(.el-menu-item),
 .is-home-layout .layout-header .account-name,

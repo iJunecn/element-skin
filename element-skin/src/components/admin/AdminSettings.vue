@@ -8,7 +8,7 @@
           <p class="subtitle">管理站点基础配置、安全策略及第三方集成</p>
         </div>
       </div>
-      <el-button type="primary" :icon="Refresh" @click="loadAllSettings" plain>
+      <el-button type="primary" :icon="Refresh" @click="loadAllSettings">
         重新加载所有
       </el-button>
     </div>
