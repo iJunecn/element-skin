@@ -90,26 +90,29 @@
       </el-menu>
     </el-drawer>
 
-    <main class="app-main">
+    <main class="app-main" :style="{ '--footer-height': footerHeight + 'px' }">
       <slot />
     </main>
 
     <!-- Home footer uses overlay layout -->
-    <footer v-if="showFooter && isHome" class="layout-footer-wrap">
+    <footer v-if="showFooter && isHome" ref="footerRef" class="layout-footer-wrap">
       <div class="layout-footer">
         <div class="footer-inner">
           <p v-if="footerText" class="footer-text">
             {{ footerText }}
           </p>
-          <p v-if="showIcp" class="footer-powered footer-filing-item">
+          <p v-if="filingIcp" class="footer-powered footer-filing-item">
             <a
+              v-if="filingIcpLink"
               :href="filingIcpLink"
               target="_blank"
               rel="noopener noreferrer"
             >{{ filingIcp }}</a>
+            <span v-else>{{ filingIcp }}</span>
           </p>
-          <p v-if="showMps" class="footer-powered footer-filing-item">
+          <p v-if="filingMps" class="footer-powered footer-filing-item">
             <a
+              v-if="filingMpsLink"
               :href="filingMpsLink"
               target="_blank"
               rel="noopener noreferrer"
@@ -117,6 +120,7 @@
             >
               <span>{{ filingMps }}</span>
             </a>
+            <span v-else class="mps-link">{{ filingMps }}</span>
           </p>
             <p class="footer-powered" :class="{ 'footer-powered-main': hasFooterLeadingItems }">
             Powered by
@@ -126,20 +130,23 @@
       </div>
     </footer>
     <!-- Standard footer -->
-    <footer v-if="showFooter && !isHome" class="app-footer">
+    <footer v-if="showFooter && !isHome" ref="footerRef" class="app-footer">
       <div class="footer-inner footer-inner-standard">
         <p v-if="footerText" class="footer-text">
           {{ footerText }}
         </p>
-        <p v-if="showIcp" class="footer-powered footer-filing-item">
+        <p v-if="filingIcp" class="footer-powered footer-filing-item">
           <a
+            v-if="filingIcpLink"
             :href="filingIcpLink"
             target="_blank"
             rel="noopener noreferrer"
           >{{ filingIcp }}</a>
+          <span v-else>{{ filingIcp }}</span>
         </p>
-        <p v-if="showMps" class="footer-powered footer-filing-item">
+        <p v-if="filingMps" class="footer-powered footer-filing-item">
           <a
+            v-if="filingMpsLink"
             :href="filingMpsLink"
             target="_blank"
             rel="noopener noreferrer"
@@ -147,6 +154,7 @@
           >
             <span>{{ filingMps }}</span>
           </a>
+          <span v-else class="mps-link">{{ filingMps }}</span>
         </p>
           <p class="footer-powered" :class="{ 'footer-powered-main': hasFooterLeadingItems }">
           Powered by
@@ -158,7 +166,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted, provide, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, provide, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import {
@@ -179,6 +187,23 @@ const filingIcp = ref('')
 const filingIcpLink = ref('')
 const filingMps = ref('')
 const filingMpsLink = ref('')
+const footerHeight = ref(0)
+const footerRef = ref(null)
+
+// --- Footer Height Calculation ---
+const updateFooterHeight = () => {
+  nextTick(() => {
+    if (footerRef.value) {
+      footerHeight.value = footerRef.value.offsetHeight
+    } else {
+      footerHeight.value = 0
+    }
+  })
+}
+
+watch([() => route.path, footerText, filingIcp, filingMps], () => {
+  updateFooterHeight()
+})
 
 // --- Theme Management ---
 const isDark = ref(false)
@@ -219,6 +244,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 provide('user', user)
 provide('fetchMe', fetchMe)
 provide('isDark', isDark)
+provide('footerHeight', footerHeight)
 
 // --- Navigation Links ---
 const publicLinks = computed(() => {
@@ -279,8 +305,8 @@ const drawerLinks = computed(() => {
 
 const activeRoute = computed(() => route.path)
 const showFooter = computed(() => !isAuthPage.value)
-const showIcp = computed(() => Boolean(filingIcp.value && filingIcpLink.value))
-const showMps = computed(() => Boolean(showIcp.value && filingMps.value && filingMpsLink.value))
+const showIcp = computed(() => Boolean(filingIcp.value))
+const showMps = computed(() => Boolean(filingMps.value))
 const hasFooterLeadingItems = computed(() => Boolean(footerText.value || showIcp.value || showMps.value))
 
 // Who said to apply hard-coded repo link/label for footer display?
@@ -304,6 +330,7 @@ const accountName = computed(() => user.value?.display_name || user.value?.email
 const avatarInitial = computed(() => (accountName.value || 'U').slice(0, 1).toUpperCase())
 
 let authTimer = null
+let resizeObserver = null
 
 function go(path) {
   push(path)
@@ -375,6 +402,7 @@ onMounted(async () => {
     if (res.data.filing_mps_link !== undefined) {
       filingMpsLink.value = res.data.filing_mps_link
     }
+    updateFooterHeight()
   } catch (e) {
     console.warn('Failed to load site settings:', e)
   }
@@ -385,11 +413,24 @@ onMounted(async () => {
   // Listen for auth changes
   window.addEventListener('storage', checkAuth)
   authTimer = setInterval(checkAuth, 1000)
+
+  // Initialize ResizeObserver for footer
+  if (window.ResizeObserver) {
+    resizeObserver = new ResizeObserver(() => {
+      updateFooterHeight()
+    })
+    nextTick(() => {
+      if (footerRef.value) resizeObserver.observe(footerRef.value)
+    })
+  }
+  window.addEventListener('resize', updateFooterHeight)
 })
 
 onUnmounted(() => {
   if (authTimer) clearInterval(authTimer)
   window.removeEventListener('storage', checkAuth)
+  window.removeEventListener('resize', updateFooterHeight)
+  if (resizeObserver) resizeObserver.disconnect()
 })
 </script>
 
@@ -409,6 +450,7 @@ onUnmounted(() => {
   height: 64px;
   z-index: 100;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .is-home-layout .layout-header-wrap {
@@ -483,7 +525,8 @@ onUnmounted(() => {
 .app-main {
   padding: 20px;
   flex: 1;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-background);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -498,6 +541,7 @@ onUnmounted(() => {
   margin-top: 0px;
   padding: 24px 20px 32px;
   z-index: 20;
+  flex-shrink: 0;
 }
 
 .layout-footer {
@@ -542,6 +586,7 @@ onUnmounted(() => {
   color: var(--color-text-light);
   padding: 16px 20px;
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  flex-shrink: 0;
 }
 
 .footer-inner-standard {
@@ -567,15 +612,19 @@ onUnmounted(() => {
 
 .is-home-layout .app-main {
   padding: 0;
-  overflow: auto;
+  min-height: calc(100vh - var(--footer-height, 0px));
 }
 
 .is-home-layout :deep(.home-container) {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .is-home-layout :deep(.hero-wrapper) {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .is-home-layout :deep(.hero-carousel-bg),
