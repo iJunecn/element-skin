@@ -1,0 +1,46 @@
+/* Shared Layout Components */
+
+/* Page Headers */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.page-header-content h1 {
+  font-size: 32px;
+  margin: 0 0 8px 0;
+  background: linear-gradient(135deg, var(--color-heading) 0%, #409eff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-header-content p {
+  margin: 0;
+  color: var(--color-text-light);
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Grids */
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 240px);
+  gap: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

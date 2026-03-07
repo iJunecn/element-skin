@@ -1,19 +1,19 @@
 <template>
-  <div class="wardrobe-section">
-    <div class="library-header">
-      <div class="header-content">
+  <div class="wardrobe-section animate-fade-in">
+    <div class="page-header">
+      <div class="page-header-content">
         <h1>我的衣柜</h1>
         <p>管理并应用您的皮肤与披风纹理</p>
       </div>
-      <el-button type="primary" @click="showUploadDialog = true" size="large" class="action-btn-primary">
+      <el-button @click="showUploadDialog = true" size="large" class="btn-gradient btn-gradient-primary">
         <el-icon><Upload /></el-icon>
         <span style="margin-left:8px">上传纹理</span>
       </el-button>
     </div>
 
-    <div class="common-grid" v-if="textures.length > 0">
+    <div class="auto-grid" v-if="textures.length > 0">
       <div
-        class="common-card clickable-card"
+        class="surface-card hoverable animate-card-slide clickable-card"
         v-for="(tex, index) in textures"
         :key="tex.hash + tex.type"
         :style="{ '--delay-index': index }"
@@ -36,14 +36,14 @@
           <!-- 皮肤分辨率标签 -->
           <div
             v-if="tex.type === 'skin' && textureResolutions.get(tex.hash)"
-            class="resolution-badge"
+            class="floating-badge"
             :style="getResolutionBadgeStyle(textureResolutions.get(tex.hash))"
           >
             {{ textureResolutions.get(tex.hash) }}x
           </div>
         </div>
         <div class="texture-info-simple">
-          <div class="texture-type-tag" :class="tex.type">
+          <div class="type-tag" :class="tex.type">
             {{ tex.type === 'skin' ? '皮肤' : '披风' }}
           </div>
           <div class="texture-note-simple">{{ tex.note || '未命名纹理' }}</div>
@@ -96,7 +96,7 @@
 
           <section class="info-section meta-section">
             <span class="meta-chip">{{ textureResolutions.get(selectedTexture.hash) || '--' }}px</span>
-            <span class="meta-chip hash-chip">{{ selectedTexture.hash }}</span>
+            <span class="meta-chip hash">{{ selectedTexture.hash }}</span>
           </section>
 
           <section class="info-section" v-if="selectedTexture.type === 'skin'">
@@ -444,59 +444,17 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@import "@/assets/styles/animations.css";
+@import "@/assets/styles/layout.css";
+@import "@/assets/styles/buttons.css";
+@import "@/assets/styles/cards.css";
+@import "@/assets/styles/tags.css";
+
 .wardrobe-section {
-  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.library-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 40px;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.header-content h1 {
-  font-size: 32px;
-  margin: 0 0 8px 0;
-  background: linear-gradient(135deg, var(--color-heading) 0%, #409eff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.header-content p {
-  margin: 0;
-  color: var(--color-text-light);
-  font-size: 16px;
-  transition: color 0.3s ease;
-}
-
-.action-btn-primary {
-  background: linear-gradient(135deg, #409eff 0%, #5cadff 100%);
-  color: #fff;
-  border: none;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.action-btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
-}
-
-.common-grid {
-  justify-content: center;
 }
 
 .clickable-card {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.clickable-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--el-box-shadow-light);
 }
 
 .texture-preview {
@@ -507,20 +465,6 @@ onMounted(() => {
   align-items: center;
   position: relative;
   overflow: hidden;
-}
-
-.resolution-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
-  animation: badgeFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s backwards;
-  z-index: 10;
 }
 
 .texture-info-simple {
@@ -541,25 +485,6 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
-}
-
-.texture-type-tag {
-  font-size: 10px;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.texture-type-tag.skin {
-  background: rgba(64, 158, 255, 0.1);
-  color: #409eff;
-}
-
-.texture-type-tag.cape {
-  background: rgba(103, 194, 58, 0.1);
-  color: #67c23a;
 }
 
 .gallery-dialog :deep(.el-dialog__headerbtn) {
@@ -639,26 +564,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--el-border-color-lighter);
-  background: var(--color-background-soft);
-  font-size: 12px;
-  color: var(--el-text-color-regular);
-}
-
-.hash-chip {
-  max-width: 240px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .section-label {
@@ -743,10 +648,6 @@ onMounted(() => {
     border-left: 0;
     border-top: 1px solid var(--el-border-color-lighter);
     padding: 16px;
-  }
-
-  .hash-chip {
-    max-width: 100%;
   }
 }
 
