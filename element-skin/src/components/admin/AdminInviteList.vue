@@ -2,7 +2,7 @@
   <div class="invites-section animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <div class="page-header-icon"><Ticket /></div>
+        <el-icon class="page-header-icon"><Ticket /></el-icon>
         <div class="page-header-text">
           <h2>邀请码管理</h2>
           <p class="subtitle">创建并管理用于限制新用户注册的邀请码</p>

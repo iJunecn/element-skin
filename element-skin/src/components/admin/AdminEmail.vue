@@ -2,7 +2,7 @@
   <div class="settings-section animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <div class="page-header-icon"><Message /></div>
+        <el-icon class="page-header-icon"><Message /></el-icon>
         <div class="page-header-text">
           <h2>邮件服务设置</h2>
           <p class="subtitle">配置 SMTP 服务器以启用注册验证、找回密码等通知功能</p>

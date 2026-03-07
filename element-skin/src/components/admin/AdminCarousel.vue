@@ -2,7 +2,7 @@
   <div class="admin-carousel animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <div class="page-header-icon"><PictureFilled /></div>
+        <el-icon class="page-header-icon"><PictureFilled /></el-icon>
         <div class="page-header-text">
           <h2>首页图库管理</h2>
           <p class="subtitle">上传并管理首页展示的轮播图片，建议使用高清横屏大图</p>

@@ -2,7 +2,7 @@
   <div class="admin-fallback animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <div class="page-header-icon"><Connection /></div>
+        <el-icon class="page-header-icon"><Connection /></el-icon>
         <div class="page-header-text">
           <h2>Fallback 服务配置</h2>
           <p class="subtitle">管理外部 Yggdrasil 或 Mojang API 的回退逻辑与白名单</p>
