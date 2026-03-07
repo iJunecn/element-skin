@@ -2,7 +2,7 @@
   <div class="invites-section animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <el-icon class="page-header-icon"><Ticket /></el-icon>
+        <div class="page-header-icon"><Ticket /></div>
         <div class="page-header-text">
           <h2>邀请码管理</h2>
           <p class="subtitle">创建并管理用于限制新用户注册的邀请码</p>
@@ -225,6 +225,7 @@ onMounted(loadInvites)
 @import "@/assets/styles/cards.css";
 @import "@/assets/styles/headers.css";
 @import "@/assets/styles/tags.css";
+@import "@/assets/styles/buttons.css";
 
 .invites-section { max-width: 1000px; margin: 0 auto; padding: 20px 0; }
 

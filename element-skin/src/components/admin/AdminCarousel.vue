@@ -2,7 +2,7 @@
   <div class="admin-carousel animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <el-icon class="page-header-icon"><PictureFilled /></el-icon>
+        <div class="page-header-icon"><PictureFilled /></div>
         <div class="page-header-text">
           <h2>首页图库管理</h2>
           <p class="subtitle">上传并管理首页展示的轮播图片，建议使用高清横屏大图</p>
@@ -114,6 +114,7 @@ onMounted(fetchCarousel)
 @import "@/assets/styles/layout.css";
 @import "@/assets/styles/cards.css";
 @import "@/assets/styles/headers.css";
+@import "@/assets/styles/buttons.css";
 
 .admin-carousel { max-width: 1000px; margin: 0 auto; padding: 20px 0; }
 

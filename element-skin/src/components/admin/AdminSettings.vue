@@ -276,6 +276,7 @@ onMounted(loadAllSettings)
 @import "@/assets/styles/layout.css";
 @import "@/assets/styles/cards.css";
 @import "@/assets/styles/headers.css";
+@import "@/assets/styles/buttons.css";
 
 .settings-section {
   max-width: 900px;

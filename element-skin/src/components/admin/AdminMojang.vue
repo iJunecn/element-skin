@@ -2,7 +2,7 @@
   <div class="admin-fallback animate-fade-in">
     <div class="page-header">
       <div class="page-header-content">
-        <el-icon class="page-header-icon"><Connection /></el-icon>
+        <div class="page-header-icon"><Connection /></div>
         <div class="page-header-text">
           <h2>Fallback 服务配置</h2>
           <p class="subtitle">管理外部 Yggdrasil 或 Mojang API 的回退逻辑与白名单</p>
@@ -436,6 +436,8 @@ onMounted(fetchSettings)
 @import "@/assets/styles/layout.css";
 @import "@/assets/styles/cards.css";
 @import "@/assets/styles/headers.css";
+@import "@/assets/styles/tags.css";
+@import "@/assets/styles/buttons.css";
 
 .admin-fallback {
   max-width: 1100px;
