@@ -217,8 +217,8 @@ onMounted(() => {
 <style scoped>
 .skin-library-container {
   max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+  margin: 0 0;
+  padding: 0;
   animation: fadeIn 0.4s ease;
 }
 

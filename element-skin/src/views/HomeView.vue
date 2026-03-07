@@ -5,7 +5,8 @@ import { User, Picture, Files, Connection } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const router = useRouter()
-const siteName = ref('皮肤站')
+const siteName = ref(localStorage.getItem('site_name_cache') || '皮肤站')
+const siteSubtitle = ref(localStorage.getItem('site_subtitle_cache') || '简洁、高效、现代的 Minecraft 皮肤管理站')
 const isLogged = ref(false)
 const carouselImages = ref([])
 
@@ -15,6 +16,11 @@ onMounted(async () => {
     const res = await axios.get('/public/settings')
     if (res.data.site_name) {
       siteName.value = res.data.site_name
+      localStorage.setItem('site_name_cache', res.data.site_name)
+    }
+    if (res.data.site_subtitle) {
+      siteSubtitle.value = res.data.site_subtitle
+      localStorage.setItem('site_subtitle_cache', res.data.site_subtitle)
     }
   } catch (e) {
     console.warn('Failed to load site settings:', e)
@@ -79,7 +85,7 @@ function getCarouselUrl(filename) {
       <div class="hero-section">
         <div class="hero-content">
           <h1 class="hero-title">{{ siteName }}</h1>
-          <p class="hero-subtitle">简洁、高效、现代的 Minecraft 皮肤管理站</p>
+          <p class="hero-subtitle">{{ siteSubtitle }}</p>
           <div class="hero-actions">
             <el-button v-if="isLogged" type="primary" size="large" @click="goDashboard" class="hero-btn">
               <el-icon><User /></el-icon>
@@ -103,7 +109,7 @@ function getCarouselUrl(filename) {
 <style scoped>
 .home-container {
   width: 100%;
-  height: 100vh;
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
@@ -112,6 +118,8 @@ function getCarouselUrl(filename) {
   position: relative;
   width: 100%;
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -153,7 +161,7 @@ function getCarouselUrl(filename) {
 .hero-section {
   position: relative;
   z-index: 2;
-  height: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,7 +201,40 @@ function getCarouselUrl(filename) {
   font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 首页蓝色半透明按钮 */
+.hero-btn:not(.secondary) {
+  background: rgba(64, 158, 255, 0.25) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-btn:not(.secondary):hover {
+  background: rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* 首页白色半透明按钮 */
+.hero-btn.secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px);
 }
 
 .features-section {

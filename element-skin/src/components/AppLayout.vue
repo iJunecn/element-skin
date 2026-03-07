@@ -90,14 +90,76 @@
       </el-menu>
     </el-drawer>
 
-    <main class="app-main">
+    <main class="app-main" :style="{ '--footer-height': footerHeight + 'px' }">
       <slot />
     </main>
+
+    <!-- Home footer uses overlay layout -->
+    <footer v-if="showFooter && isHome" ref="footerRef" class="layout-footer-wrap">
+      <div class="layout-footer">
+        <div class="footer-inner">
+          <div class="footer-links">
+            <span v-if="footerText" class="footer-item footer-text">
+              {{ footerText }}
+            </span>
+            <span v-if="filingIcp" class="footer-item">
+              <a v-if="filingIcpLink" :href="filingIcpLink" target="_blank" rel="noopener noreferrer">{{ filingIcp }}</a>
+              <span v-else>{{ filingIcp }}</span>
+            </span>
+            <span v-if="filingMps" class="footer-item">
+              <a v-if="filingMpsLink" :href="filingMpsLink" target="_blank" rel="noopener noreferrer" class="mps-link">
+                <img src="https://www.beian.gov.cn/img/ghs.png" class="mps-icon" />
+                <span>{{ filingMps }}</span>
+              </a>
+              <span v-else class="mps-link">
+                <img src="https://www.beian.gov.cn/img/ghs.png" class="mps-icon" />
+                <span>{{ filingMps }}</span>
+              </span>
+            </span>
+          </div>
+          <div class="footer-credits">
+            <span class="footer-item powered-by">
+              Powered by <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
+            </span>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Standard footer -->
+    <footer v-if="showFooter && !isHome" ref="footerRef" class="app-footer">
+      <div class="footer-inner footer-inner-standard">
+        <div class="footer-links">
+          <span v-if="footerText" class="footer-item footer-text">
+            {{ footerText }}
+          </span>
+          <span v-if="filingIcp" class="footer-item">
+            <a v-if="filingIcpLink" :href="filingIcpLink" target="_blank" rel="noopener noreferrer">{{ filingIcp }}</a>
+            <span v-else>{{ filingIcp }}</span>
+          </span>
+          <span v-if="filingMps" class="footer-item">
+            <a v-if="filingMpsLink" :href="filingMpsLink" target="_blank" rel="noopener noreferrer" class="mps-link">
+              <img src="https://www.beian.gov.cn/img/ghs.png" class="mps-icon" />
+              <span>{{ filingMps }}</span>
+            </a>
+            <span v-else class="mps-link">
+              <img src="https://www.beian.gov.cn/img/ghs.png" class="mps-icon" />
+              <span>{{ filingMps }}</span>
+            </span>
+          </span>
+        </div>
+        <div class="footer-credits">
+          <span class="footer-item powered-by">
+            Powered by <a :href="repoUrl" target="_blank" rel="noopener noreferrer">{{ repoLabel }}</a>
+          </span>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted, provide, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, provide, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import {
@@ -113,6 +175,28 @@ const enableSkinLibrary = ref(localStorage.getItem('enable_skin_library_cache') 
 const jwtToken = ref(localStorage.getItem('jwt') || '')
 const user = ref(null)
 const drawer = ref(false)
+const footerText = ref('')
+const filingIcp = ref('')
+const filingIcpLink = ref('')
+const filingMps = ref('')
+const filingMpsLink = ref('')
+const footerHeight = ref(0)
+const footerRef = ref(null)
+
+// --- Footer Height Calculation ---
+const updateFooterHeight = () => {
+  nextTick(() => {
+    if (footerRef.value) {
+      footerHeight.value = footerRef.value.offsetHeight
+    } else {
+      footerHeight.value = 0
+    }
+  })
+}
+
+watch([() => route.path, footerText, filingIcp, filingMps], () => {
+  updateFooterHeight()
+})
 
 // --- Theme Management ---
 const isDark = ref(false)
@@ -153,6 +237,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)
 provide('user', user)
 provide('fetchMe', fetchMe)
 provide('isDark', isDark)
+provide('footerHeight', footerHeight)
 
 // --- Navigation Links ---
 const publicLinks = computed(() => {
@@ -212,7 +297,14 @@ const drawerLinks = computed(() => {
 })
 
 const activeRoute = computed(() => route.path)
+const showFooter = computed(() => !isAuthPage.value)
+const showIcp = computed(() => Boolean(filingIcp.value))
+const showMps = computed(() => Boolean(filingMps.value))
+const hasFooterLeadingItems = computed(() => Boolean(footerText.value || showIcp.value || showMps.value))
 
+// Who said to apply hard-coded repo link/label for footer display?
+const repoUrl = 'https://github.com/water2004/element-skin'
+const repoLabel = `Element Skin ${__APP_VERSION__ || 'v0.0.0'}`
 
 // --- Authentication and User State ---
 function parseJwt(token) {
@@ -231,6 +323,7 @@ const accountName = computed(() => user.value?.display_name || user.value?.email
 const avatarInitial = computed(() => (accountName.value || 'U').slice(0, 1).toUpperCase())
 
 let authTimer = null
+let resizeObserver = null
 
 function go(path) {
   push(path)
@@ -287,6 +380,22 @@ onMounted(async () => {
       enableSkinLibrary.value = res.data.enable_skin_library
       localStorage.setItem('enable_skin_library_cache', res.data.enable_skin_library.toString())
     }
+    if (res.data.footer_text !== undefined) {
+      footerText.value = res.data.footer_text
+    }
+    if (res.data.filing_icp !== undefined) {
+      filingIcp.value = res.data.filing_icp
+    }
+    if (res.data.filing_icp_link !== undefined) {
+      filingIcpLink.value = res.data.filing_icp_link
+    }
+    if (res.data.filing_mps !== undefined) {
+      filingMps.value = res.data.filing_mps
+    }
+    if (res.data.filing_mps_link !== undefined) {
+      filingMpsLink.value = res.data.filing_mps_link
+    }
+    updateFooterHeight()
   } catch (e) {
     console.warn('Failed to load site settings:', e)
   }
@@ -297,15 +406,34 @@ onMounted(async () => {
   // Listen for auth changes
   window.addEventListener('storage', checkAuth)
   authTimer = setInterval(checkAuth, 1000)
+
+  // Initialize ResizeObserver for footer
+  if (window.ResizeObserver) {
+    resizeObserver = new ResizeObserver(() => {
+      updateFooterHeight()
+    })
+    nextTick(() => {
+      if (footerRef.value) resizeObserver.observe(footerRef.value)
+    })
+  }
+  window.addEventListener('resize', updateFooterHeight)
 })
 
 onUnmounted(() => {
   if (authTimer) clearInterval(authTimer)
   window.removeEventListener('storage', checkAuth)
+  window.removeEventListener('resize', updateFooterHeight)
+  if (resizeObserver) resizeObserver.disconnect()
 })
 </script>
 
 <style scoped>
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout-header-wrap {
   padding: 0 20px;
   background: var(--color-header-background);
@@ -315,6 +443,7 @@ onUnmounted(() => {
   height: 64px;
   z-index: 100;
   transition: all 0.3s;
+  flex-shrink: 0;
 }
 
 .is-home-layout .layout-header-wrap {
@@ -326,6 +455,55 @@ onUnmounted(() => {
   border-bottom: none;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+/* 首页顶部标题栏按钮统一 */
+.is-home-layout .header-actions :deep(.el-button--primary) {
+  background: rgba(64, 158, 255, 0.3) !important;
+  border: 1px solid rgba(64, 158, 255, 0.4) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.is-home-layout .header-actions :deep(.hero-btn.secondary) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 全局实心按钮深色模式自适应 - 使用精准变量覆盖 */
+:deep(.el-button) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+}
+
+/* 深色模式下降低实心按钮明度 */
+:global(html.dark) :deep(.el-button--primary:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #2a5d91 !important;
+  --el-button-border-color: #2a5d91 !important;
+  --el-button-hover-bg-color: #337ecc !important;
+  --el-button-active-bg-color: #24507a !important;
+}
+
+:global(html.dark) :deep(.el-button--danger:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #8e3535 !important;
+  --el-button-border-color: #8e3535 !important;
+  --el-button-hover-bg-color: #a34242 !important;
+  --el-button-active-bg-color: #7a2d2d !important;
+}
+
+:global(html.dark) :deep(.el-button--success:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #417228 !important;
+  --el-button-border-color: #417228 !important;
+  --el-button-hover-bg-color: #529b2e !important;
+}
+
+:global(html.dark) :deep(.el-button--warning:not(.is-text):not(.is-plain):not(.is-link)) {
+  --el-button-bg-color: #91612a !important;
+  --el-button-border-color: #91612a !important;
 }
 
 .is-home-layout .layout-header .logo, 
@@ -389,13 +567,161 @@ onUnmounted(() => {
 .app-main {
   padding: 20px;
   flex: 1;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-background);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.layout-footer-wrap {
+  display: none;
+}
+
+.is-home-layout .layout-footer-wrap {
+  display: block;
+  position: relative;
+  margin-top: 0px;
+  padding: 24px 20px 32px;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+.layout-footer {
+  color: #fff;
+}
+
+.layout-footer .footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-links, .footer-credits {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  line-height: 1.2;
+}
+
+.footer-item {
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-item + .footer-item::before {
+  content: "";
+  display: inline-block;
+  width: 1px;
+  height: 9px;
+  background: currentColor;
+  margin: 0 10px;
+  opacity: 0.12;
+}
+
+.footer-item a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  opacity: 0.75;
+}
+
+.footer-item a:hover {
+  opacity: 1;
+  color: #409eff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mps-icon {
+  width: 13px;
+  height: 13px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.layout-footer .footer-inner {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.layout-footer .footer-item a:hover {
+  color: #fff;
+}
+
+.app-footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card-background);
+  color: var(--color-text-light);
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.footer-inner-standard {
+  margin: 0 auto;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.powered-by {
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+@media (max-width: 768px) {
+  .footer-item + .footer-item::before {
+    margin: 0 6px;
+  }
+  .app-footer {
+    padding: 8px 16px;
+  }
+  .is-home-layout .layout-footer-wrap {
+    padding: 12px 16px 16px;
+  }
+}
+
+.mps-link {
+  display: inline-flex;
+  align-items: center;
+}
+
 .is-home-layout .app-main {
   padding: 0;
+  min-height: calc(100vh - var(--footer-height, 0px));
+}
+
+.is-home-layout :deep(.home-container) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-home-layout :deep(.hero-wrapper) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-home-layout :deep(.hero-carousel-bg),
+.is-home-layout :deep(.hero-gradient-bg),
+.is-home-layout :deep(.el-carousel) {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  z-index: 1;
 }
 
 .is-auth-layout .app-main {
