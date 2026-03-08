@@ -221,7 +221,6 @@ onMounted(() => {
 @import "@/assets/styles/tags.css";
 
 .skin-library-container {
-  max-width: 1400px;
   margin: 0 0;
   padding: 0;
 }
