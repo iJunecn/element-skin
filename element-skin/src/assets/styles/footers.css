@@ -39,18 +39,20 @@
 
 .footer-link-item:hover {
   opacity: 1;
-  color: var(--el-color-primary);
-  text-decoration: underline;
+  color: var(--el-color-primary) !important;
+  text-decoration: underline !important;
 }
 
-.footer-link-item + .footer-link-item::before {
-  content: "";
-  display: inline-block;
-  width: 1px;
-  height: 10px;
-  background: currentColor;
-  margin: 0 12px;
+.footer-text-item {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.footer-separator {
+  font-size: 10px;
+  margin: 0 10px;
   opacity: 0.15;
+  user-select: none;
 }
 
 .footer-credits {
