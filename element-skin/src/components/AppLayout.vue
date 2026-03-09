@@ -119,7 +119,7 @@
           </template>
         </div>
         <div class="footer-credits">
-          Powered by <a :href="repoUrl" target="_blank" style="color:inherit; text-decoration:none; opacity:0.8;">{{ repoLabel }}</a>
+          Powered by <a :href="repoUrl" target="_blank" class="footer-link-item">{{ repoLabel }}</a>
         </div>
       </div>
     </footer>
